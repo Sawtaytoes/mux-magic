@@ -1,7 +1,14 @@
+import * as fsPromises from "node:fs/promises"
 import { join } from "node:path"
 import { vol } from "memfs"
 import { EmptyError, firstValueFrom } from "rxjs"
-import { describe, expect, test } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { captureLogMessage } from "./captureLogMessage.js"
 import {
   createRenameFileOrFolderObservable,
@@ -87,6 +94,204 @@ describe(renameFileOrFolder.name, () => {
         }),
       ),
     ).resolves.toBeUndefined()
+  })
+})
+
+describe(`${renameFileOrFolder.name} claims names atomically`, () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  test("two concurrent renames into one name keep both files", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+      "/anime/second.mkv": "second",
+    })
+
+    const results = await Promise.allSettled([
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/Show - s01e01.mkv",
+          oldPath: "/anime/first.mkv",
+        }),
+      ),
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/Show - s01e01.mkv",
+          oldPath: "/anime/second.mkv",
+        }),
+      ),
+    ])
+
+    expect(results.map((result) => result.status)).toEqual([
+      "fulfilled",
+      "rejected",
+    ])
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("first")
+    expect(
+      vol.readFileSync("/anime/second.mkv", "utf8"),
+    ).toBe("second")
+    expect(vol.existsSync("/anime/first.mkv")).toBe(false)
+  })
+
+  test("releases the claim so a later rename into a freed name works", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+      "/anime/second.mkv": "second",
+    })
+
+    await firstValueFrom(
+      renameFileOrFolder({
+        newPath: "/anime/Show - s01e01.mkv",
+        oldPath: "/anime/first.mkv",
+      }),
+    )
+    vol.unlinkSync("/anime/Show - s01e01.mkv")
+    await firstValueFrom(
+      renameFileOrFolder({
+        newPath: "/anime/Show - s01e01.mkv",
+        oldPath: "/anime/second.mkv",
+      }),
+    )
+
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("second")
+  })
+
+  test("does not rename when checking the target fails for a reason other than ENOENT", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+      "/anime/blocker": "a file, not a folder",
+    })
+
+    await expect(
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/blocker/Show - s01e01.mkv",
+          oldPath: "/anime/first.mkv",
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "ENOTDIR" })
+    expect(
+      vol.readFileSync("/anime/first.mkv", "utf8"),
+    ).toBe("first")
+  })
+
+  test("without hard links, a file that appears at the target is kept", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+    })
+    vi.spyOn(fsPromises, "link").mockImplementationOnce(
+      async () => {
+        // Another writer takes the name after the absence check, and
+        // the file system has no hard links.
+        vol.writeFileSync(
+          "/anime/Show - s01e01.mkv",
+          "other",
+        )
+        throw Object.assign(new Error("EPERM: no links"), {
+          code: "EPERM",
+        })
+      },
+    )
+
+    await expect(
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/Show - s01e01.mkv",
+          oldPath: "/anime/first.mkv",
+        }),
+      ),
+    ).rejects.toContain("already exists")
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("other")
+    expect(
+      vol.readFileSync("/anime/first.mkv", "utf8"),
+    ).toBe("first")
+  })
+
+  test("without hard links, a file still renames into a free name", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+    })
+    vi.spyOn(fsPromises, "link").mockRejectedValueOnce(
+      Object.assign(new Error("EPERM: no links"), {
+        code: "EPERM",
+      }),
+    )
+
+    await firstValueFrom(
+      renameFileOrFolder({
+        newPath: "/anime/Show - s01e01.mkv",
+        oldPath: "/anime/first.mkv",
+      }),
+    )
+
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("first")
+    expect(vol.existsSync("/anime/first.mkv")).toBe(false)
+  })
+
+  test("a symbolic link source never replaces a file that appears at the target", async () => {
+    vol.fromJSON({
+      "/anime/target-of-link.mkv": "linked",
+    })
+    vol.symlinkSync(
+      "/anime/target-of-link.mkv",
+      "/anime/link.mkv",
+    )
+    const realLstat = fsPromises.lstat
+    vi.spyOn(fsPromises, "lstat").mockImplementationOnce(
+      async (path) => {
+        // Another writer takes the name after the absence check.
+        vol.writeFileSync(
+          "/anime/Show - s01e01.mkv",
+          "other",
+        )
+        return realLstat(path)
+      },
+    )
+
+    await expect(
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/Show - s01e01.mkv",
+          oldPath: "/anime/link.mkv",
+        }),
+      ),
+    ).rejects.toContain("already exists")
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("other")
+    expect(
+      vol.lstatSync("/anime/link.mkv").isSymbolicLink(),
+    ).toBe(true)
+  })
+
+  test("renames a folder", async () => {
+    vol.fromJSON({
+      "/anime/Disc 1/episode.mkv": "episode",
+    })
+
+    await firstValueFrom(
+      renameFileOrFolder({
+        newPath: "/anime/Season 01",
+        oldPath: "/anime/Disc 1",
+      }),
+    )
+
+    expect(
+      vol.readFileSync(
+        "/anime/Season 01/episode.mkv",
+        "utf8",
+      ),
+    ).toBe("episode")
+    expect(vol.existsSync("/anime/Disc 1")).toBe(false)
   })
 })
 

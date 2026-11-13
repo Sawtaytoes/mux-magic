@@ -15,6 +15,19 @@ import {
 vi.mock("node:fs")
 vi.mock("node:fs/promises")
 
+// The `trash` package shells out to the real OS trash, outside memfs.
+// Commands such as deleteFolder delete through it by default, so a test
+// must never reach the real one. This stand-in removes the path from
+// memfs instead. Tests that inspect trash calls mock it again locally.
+vi.mock("trash", () => ({
+  default: vi.fn((paths: string[]) => {
+    paths.forEach((path) => {
+      vol.rmSync(path, { recursive: true, force: true })
+    })
+    return Promise.resolve()
+  }),
+}))
+
 // Auto-mock every module under cli-spawn-operations/ — they all wrap
 // 3rd-party CLI binaries (mkvextract / mkvmerge / mkvpropedit / ffmpeg
 // / fpcalc) that aren't installed in CI and can't be safely spawned

@@ -693,6 +693,10 @@ export const COMMANDS: Commands = {
           name: "copiedSourcePaths",
           label: "Copied source paths",
         },
+        {
+          name: "copiedDestinationPaths",
+          label: "Copied destination paths",
+        },
       ],
       fields: [
         field("sourcePath", {
@@ -877,6 +881,10 @@ export const COMMANDS: Commands = {
         {
           name: "copiedSourcePaths",
           label: "Copied source paths",
+        },
+        {
+          name: "copiedDestinationPaths",
+          label: "Copied destination paths",
         },
       ],
       fields: [
@@ -1070,7 +1078,7 @@ export const COMMANDS: Commands = {
     )
     return {
       summary:
-        "Delete the original source paths captured by a prior copyFiles/moveFiles step (wire pathsToDelete from that step's copiedSourcePaths output). No-op when the list is empty.",
+        "Delete the original source paths captured by a prior copyFiles/moveFiles step (wire pathsToDelete from that step's copiedSourcePaths output and copiedDestinationPaths from its copiedDestinationPaths output). Deletes nothing unless every copy exists and matches in size. No-op when the list is empty.",
       tag: "File Operations",
       outputFolderName: null,
       fields: [
@@ -1090,6 +1098,14 @@ export const COMMANDS: Commands = {
           // link picker so users only see valid array sources. Update
           // this list when new commands publish `string[]` outputs.
           acceptedOutputs: ["copiedSourcePaths"],
+        }),
+        field("copiedDestinationPaths", {
+          type: "stringArray",
+          label: "Copied Destination Paths",
+          placeholder:
+            "Link from the same copyFiles step's copiedDestinationPaths output",
+          isLinkable: true,
+          acceptedOutputs: ["copiedDestinationPaths"],
         }),
       ],
     }

@@ -179,6 +179,26 @@ export const runFfmpeg = ({
             },
           )
 
+          // Without an 'error' listener, a spawn failure (ENOENT when
+          // the binary is missing, EACCES, and so on) becomes an
+          // uncaughtException, and the server's crash handler exits the
+          // whole process. Fail only this observable instead. 'exit'
+          // never fires after a failed spawn, so restore the terminal
+          // here too.
+          childProcess.on("error", (error) => {
+            if (isUsingTtyAffordances) {
+              process.stdin.setRawMode(false)
+              if (stdinDataHandler) {
+                process.stdin.removeListener(
+                  "data",
+                  stdinDataHandler,
+                )
+              }
+              process.stdin.pause()
+            }
+            observer.error(error)
+          })
+
           let hasStarted = false
 
           childProcess.stdout.on("data", (data) => {
@@ -243,18 +263,30 @@ export const runFfmpeg = ({
             : null
           childProcess.on("close", (code) => {
             if (code === null) {
-              unlink(outputFilePath).then(() => {
-                logWarning(
-                  "ffmpeg",
-                  "Process canceled by user.",
-                )
+              // A cancel can land before the output file exists. Without this
+              // catch, the rejection is unhandled, and the server's crash
+              // handler exits the whole process.
+              unlink(outputFilePath)
+                .catch((error: NodeJS.ErrnoException) => {
+                  if (error.code !== "ENOENT") {
+                    logWarning(
+                      "ffmpeg",
+                      `Could not remove partial output ${outputFilePath}: ${error.message}`,
+                    )
+                  }
+                })
+                .then(() => {
+                  logWarning(
+                    "ffmpeg",
+                    "Process canceled by user.",
+                  )
 
-                if (isUsingTtyAffordances) {
-                  setTimeout(() => {
-                    process.exit()
-                  }, 500)
-                }
-              })
+                  if (isUsingTtyAffordances) {
+                    setTimeout(() => {
+                      process.exit()
+                    }, 500)
+                  }
+                })
             }
           })
 

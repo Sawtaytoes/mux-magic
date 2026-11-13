@@ -17,6 +17,7 @@ import {
   buildTitleGraphFromEvents,
   type DiscTitleGraph,
 } from "../tools/makemkv/parseTitleGraph.js"
+import { MAKEMKV_INFO_TIMEOUT_MS } from "../tools/outboundTimeouts.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
 /**
@@ -67,6 +68,17 @@ export const runMakeMkvCon = ({
       },
     )
 
+    // This is the info scan, never a rip, so a bound is safe. A stalled
+    // read would otherwise hold the job open forever. Erroring the
+    // observer runs the teardown below, which kills the makemkvcon tree.
+    const timeoutHandle = setTimeout(() => {
+      observer.error(
+        new Error(
+          `makemkvcon info timed out after ${MAKEMKV_INFO_TIMEOUT_MS / 60000} minutes: ${sourcePath}`,
+        ),
+      )
+    }, MAKEMKV_INFO_TIMEOUT_MS)
+
     const stdoutChunks: string[] = []
     const stderrChunks: string[] = []
 
@@ -85,6 +97,8 @@ export const runMakeMkvCon = ({
     })
 
     childProcess.on("exit", (code) => {
+      clearTimeout(timeoutHandle)
+
       const events = stdoutChunks
         .join("")
         .split("\n")
@@ -118,5 +132,10 @@ export const runMakeMkvCon = ({
       }
     })
 
-    return treeKillOnUnsubscribe(childProcess)
+    const treeKillTeardown =
+      treeKillOnUnsubscribe(childProcess)
+    return () => {
+      clearTimeout(timeoutHandle)
+      treeKillTeardown()
+    }
   }).pipe(logAndSwallowPipelineError(runMakeMkvCon))

@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process"
 import { platform } from "node:os"
+import { logWarning } from "@mux-magic/tools"
 
 import { validateReadablePath } from "./pathSafety.js"
 
@@ -46,6 +47,15 @@ export const openInExternalApp = (path: string): void => {
     detached: true,
     stdio: "ignore",
     windowsHide: true,
+  })
+  // A missing launcher (no xdg-open in a container, for example) emits
+  // 'error'. Without a listener that becomes an uncaughtException, and
+  // the server's crash handler exits the whole process.
+  child.on("error", (error) => {
+    logWarning(
+      "OPEN IN EXTERNAL APP",
+      `${command} failed: ${error.message}`,
+    )
   })
   // Don't keep the parent process alive waiting on the launched app.
   child.unref()

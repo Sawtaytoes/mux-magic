@@ -8,6 +8,7 @@ import { treeKillOnUnsubscribe } from "../cli-spawn-operations/treeKillChild.js"
 import { mkvMergePath } from "./appPaths.js"
 import { createTtyAffordances } from "./createTtyAffordances.js"
 import type { Iso6392LanguageCode } from "./iso6392LanguageCodes.js"
+import { MEDIA_PROBE_TIMEOUT_MS } from "./outboundTimeouts.js"
 
 export type Chapter = {
   num_entries: number
@@ -108,6 +109,19 @@ export const getMkvInfo = (
       observer.error(err)
     })
 
+    // A stalled identify (a hung network share, for example) would
+    // otherwise hold this probe and its job open forever. Erroring the
+    // observer runs the teardown below, which kills the mkvmerge tree.
+    let isTimedOut = false
+    const timeoutHandle = setTimeout(() => {
+      isTimedOut = true
+      observer.error(
+        new Error(
+          `mkvmerge --identify timed out after ${MEDIA_PROBE_TIMEOUT_MS / 1000} seconds: ${filePath}`,
+        ),
+      )
+    }, MEDIA_PROBE_TIMEOUT_MS)
+
     const tty = createTtyAffordances(childProcess)
 
     const chunks: Uint8Array[] = []
@@ -138,7 +152,14 @@ export const getMkvInfo = (
     // the event loop is saturated and the race loses consistently, which
     // is why every file failed rather than just some.
     childProcess.on("close", (code) => {
+      clearTimeout(timeoutHandle)
       tty.detach()
+
+      // The timeout already failed this observable and killed the child.
+      // Skip the cancel path below, which would exit a CLI process.
+      if (isTimedOut) {
+        return
+      }
 
       // code === null is the user-cancel path: the process was killed by a
       // signal (treeKill on unsubscribe). Finish without emitting.
@@ -195,7 +216,12 @@ export const getMkvInfo = (
     // running until it finishes (usually fast, but not always — large
     // attachments can stall it). Same teardown the streaming wrappers
     // (runMkvMerge, runMkvExtract, runMkvPropEdit, runFfmpeg) already use.
-    return treeKillOnUnsubscribe(childProcess)
+    const treeKillTeardown =
+      treeKillOnUnsubscribe(childProcess)
+    return () => {
+      clearTimeout(timeoutHandle)
+      treeKillTeardown()
+    }
   }).pipe(
     map((mkvInfoJsonString) => {
       // mkvmerge's JSON uses snake_case for boolean track properties that

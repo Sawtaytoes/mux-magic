@@ -3,16 +3,12 @@ import {
   createWriteStream,
   constants as fsConstants,
 } from "node:fs"
-import {
-  copyFile,
-  rename,
-  stat,
-  unlink,
-} from "node:fs/promises"
+import { copyFile, stat, unlink } from "node:fs/promises"
 import { Transform } from "node:stream"
 import { pipeline } from "node:stream/promises"
 
 import { hasErrorCode } from "./hasErrorCode.js"
+import { renameOntoDestination } from "./renameOntoDestination.js"
 import { tryLinuxClone } from "./tryLinuxClone.js"
 
 /**
@@ -207,24 +203,6 @@ const emitCompletionEvent = async (
   })
 }
 
-// POSIX `rename` overwrites silently; Windows `rename` errors with
-// EPERM against an existing file. When we know the destination is
-// present (overwrite case), unlink first; ignore ENOENT in case
-// something raced us to it.
-const finalizeRename = async (
-  tempPath: string,
-  destination: string,
-  hasExistingDestination: boolean,
-) => {
-  if (hasExistingDestination) {
-    await unlink(destination).catch((error) => {
-      if (hasErrorCode(error, "ENOENT")) return
-      throw error
-    })
-  }
-  await rename(tempPath, destination)
-}
-
 /**
  * Atomically copies a single file from `source` to `destination`.
  *
@@ -306,11 +284,13 @@ export const aclSafeCopyFile = async (
         : new Error("aborted")
     }
 
-    await finalizeRename(
-      tempPath,
-      destination,
+    // Renames over the destination without deleting it first, so a
+    // failed rename leaves the old file in place.
+    await renameOntoDestination({
+      destinationPath: destination,
       hasExistingDestination,
-    )
+      sourcePath: tempPath,
+    })
   } catch (error) {
     await safeUnlink(tempPath)
     throw error

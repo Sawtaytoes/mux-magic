@@ -91,6 +91,40 @@ describe("attemptDeliveryOnce", () => {
     ).toBe("delivered")
   })
 
+  test("bounds each POST with a timeout signal", async () => {
+    await addJobError(makeRecord())
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+    })
+
+    await attemptDeliveryOnce("rec_1")
+
+    const [, init] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit,
+    ]
+    expect(init.signal).toBeInstanceOf(AbortSignal)
+  })
+
+  test("a timed-out POST stays pending for a retry", async () => {
+    await addJobError(makeRecord())
+    fetchMock.mockRejectedValueOnce(
+      new DOMException(
+        "The operation was aborted due to timeout",
+        "TimeoutError",
+      ),
+    )
+
+    const { scheduleMs } =
+      await attemptDeliveryOnce("rec_1")
+
+    expect(scheduleMs).not.toBeNull()
+    expect(
+      getJobError("rec_1")?.webhookDelivery.state,
+    ).toBe("pending")
+  })
+
   test("4xx non-429 transitions to exhausted with no schedule", async () => {
     await addJobError(makeRecord())
     fetchMock.mockResolvedValueOnce({

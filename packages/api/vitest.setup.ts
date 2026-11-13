@@ -15,6 +15,19 @@ import { afterEach, beforeEach, vi } from "vitest"
 vi.mock("node:fs")
 vi.mock("node:fs/promises")
 
+// The `trash` package shells out to the real OS trash, outside memfs.
+// Commands such as deleteFolder delete through it by default, so a test
+// must never reach the real one. This stand-in removes the path from
+// memfs instead. Tests that inspect trash calls mock it again locally.
+vi.mock("trash", () => ({
+  default: vi.fn((paths: string[]) => {
+    paths.forEach((path) => {
+      vol.rmSync(path, { recursive: true, force: true })
+    })
+    return Promise.resolve()
+  }),
+}))
+
 // memfs is POSIX-only, and the test fixtures all use POSIX paths
 // (`/work`, `/seq-root`, `/media`). Default `getPlatform` to "linux" so
 // platform-gated guards in production code (notably the drive-relative

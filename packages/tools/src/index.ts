@@ -82,6 +82,7 @@ export {
 } from "./logMessage.js"
 export { makeDirectory } from "./makeDirectory.js"
 export { naturalSort } from "./naturalSort.js"
+export { renameOntoDestination } from "./renameOntoDestination.js"
 export { replaceFileExtension } from "./replaceFileExtension.js"
 export {
   SOURCE_PATH_FIELD_NAME,
