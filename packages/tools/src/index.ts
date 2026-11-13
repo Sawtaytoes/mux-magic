@@ -81,7 +81,47 @@ export {
   messageTemplate,
 } from "./logMessage.js"
 export { makeDirectory } from "./makeDirectory.js"
+export {
+  getIsMakemkvBackupCompleteMessage,
+  getIsMakemkvBackupFailureMessage,
+  getIsMakemkvHashCheckFailureMessage,
+  getIsMakemkvKeyFailureEvent,
+  getIsMakemkvPrompt,
+  getIsMakemkvScrambledSectorError,
+  getMakemkvSavedTitleCount,
+  getMakemkvTitlesSavedFromMessage,
+  type MakemkvCurrentProgressTitleEvent,
+  type MakemkvDiscAttributeEvent,
+  type MakemkvDriveEvent,
+  type MakemkvEvent,
+  type MakemkvEventType,
+  type MakemkvMalformedEvent,
+  type MakemkvMessageEvent,
+  type MakemkvProgressValuesEvent,
+  type MakemkvStreamAttributeEvent,
+  type MakemkvTitleAttributeEvent,
+  type MakemkvTitleCountEvent,
+  type MakemkvTotalProgressTitleEvent,
+  type MakemkvUnknownEvent,
+  makemkvBoxYesNoMask,
+  makemkvBoxYesNoValue,
+  makemkvKeyFailureMessageCodes,
+  makemkvMessageCode,
+  makemkvScrambledSectorMarker,
+  makemkvTitlesSavedMessageCodes,
+} from "./makemkv/makemkvEvents.js"
+export { parseMakemkvLine } from "./makemkv/parseLine.js"
+export {
+  type ScannedMakemkvLine,
+  scanMakemkvFields,
+  scanMakemkvLine,
+} from "./makemkv/scanFields.js"
 export { naturalSort } from "./naturalSort.js"
+export {
+  postJsonWebhook,
+  type WebhookDeliveryResult,
+  webhookTimeoutMilliseconds,
+} from "./postJsonWebhook.js"
 export { renameOntoDestination } from "./renameOntoDestination.js"
 export { replaceFileExtension } from "./replaceFileExtension.js"
 export {
@@ -89,6 +129,11 @@ export {
   SOURCE_PATH_LABEL,
   type SourcePath,
 } from "./sourcePath.js"
+export {
+  defaultSseKeepaliveIntervalMilliseconds,
+  type SseKeepaliveStream,
+  startSseKeepalive,
+} from "./startSseKeepalive.js"
 export {
   __resetTaskSchedulerForTests,
   initTaskScheduler,

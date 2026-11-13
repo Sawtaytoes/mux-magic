@@ -1,5 +1,6 @@
+import type { MakemkvMessageEvent } from "@mux-magic/tools"
+
 import { makeMkvHomePath } from "../appPaths.js"
-import type { MessageEvent } from "./makemkvEvents.js"
 
 /**
  * Describe a MakeMKV key failure in the terms the operator can act on.
@@ -10,7 +11,7 @@ import type { MessageEvent } from "./makemkvEvents.js"
  * as a disc problem when it is a licensing problem.
  */
 export const buildKeyFailureError = (
-  keyFailureMessages: MessageEvent[],
+  keyFailureMessages: MakemkvMessageEvent[],
 ) =>
   new Error(
     [

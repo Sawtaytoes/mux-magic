@@ -1,8 +1,8 @@
 {
   "name": "@mux-magic/tools",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "type": "module",
-  "description": "Reusable utilities (file system, logging, rxjs operators) shared between @mux-magic/api and sibling tools like Gallery-Downloader.",
+  "description": "Reusable utilities (file system, logging, rxjs operators, MakeMKV robot-mode parsing, webhooks, SSE keepalive) shared between @mux-magic/api and sibling apps like Gallery-Downloader and rip-deck.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "//exports": "`mux-magic-source` is a PRIVATE condition name and `source` is not. Every `tsx` entry point in this repo passes one of them so that this package loads from `src/`. `source` is a shared convention, so passing it also re-points third-party packages that declare it — `@internationalized/date` resolves to a TypeScript barrel and hands back 2 named exports instead of 63, which broke `radix-vue` and with it the Docker build. A name only this repo uses cannot collide. `source` stays here for outside consumers that already read it.",

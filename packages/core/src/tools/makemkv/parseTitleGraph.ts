@@ -1,18 +1,19 @@
 import {
+  getIsMakemkvKeyFailureEvent,
+  type MakemkvDiscAttributeEvent,
+  type MakemkvEvent,
+  type MakemkvMessageEvent,
+  type MakemkvStreamAttributeEvent,
+  type MakemkvTitleAttributeEvent,
+  makemkvMessageCode,
+  parseMakemkvLine,
+} from "@mux-magic/tools"
+
+import {
   apItemAttributeId,
   getStreamKindFromTypeCode,
   type StreamKind,
 } from "./apItemAttributeIds.js"
-import {
-  type DiscAttributeEvent,
-  getIsKeyFailureEvent,
-  type MakemkvEvent,
-  type MessageEvent,
-  makemkvMessageCode,
-  type StreamAttributeEvent,
-  type TitleAttributeEvent,
-} from "./makemkvEvents.js"
-import { parseMakemkvLine } from "./parseLine.js"
 
 export type DiscTitleStream = {
   bitrateText: string
@@ -74,7 +75,7 @@ export type SkippedTitle = {
 export type DiscTitleGraph = {
   discName: string
   discTypeText: string
-  keyFailureMessages: MessageEvent[]
+  keyFailureMessages: MakemkvMessageEvent[]
   malformedLineCount: number
   reportedTitleCount: number | null
   skippedTitles: SkippedTitle[]
@@ -254,7 +255,7 @@ const buildTitle = ({
   )
 
 const getSkippedTitleFromMessage = (
-  event: MessageEvent,
+  event: MakemkvMessageEvent,
 ): SkippedTitle | null =>
   event.code === makemkvMessageCode.TITLE_TOO_SHORT
     ? {
@@ -272,19 +273,22 @@ const getSkippedTitleFromMessage = (
 
 const getIsDiscAttributeEvent = (
   event: MakemkvEvent,
-): event is DiscAttributeEvent => event.type === "CINFO"
+): event is MakemkvDiscAttributeEvent =>
+  event.type === "CINFO"
 
 const getIsTitleAttributeEvent = (
   event: MakemkvEvent,
-): event is TitleAttributeEvent => event.type === "TINFO"
+): event is MakemkvTitleAttributeEvent =>
+  event.type === "TINFO"
 
 const getIsStreamAttributeEvent = (
   event: MakemkvEvent,
-): event is StreamAttributeEvent => event.type === "SINFO"
+): event is MakemkvStreamAttributeEvent =>
+  event.type === "SINFO"
 
 const getIsMessageEvent = (
   event: MakemkvEvent,
-): event is MessageEvent => event.type === "MSG"
+): event is MakemkvMessageEvent => event.type === "MSG"
 
 /**
  * Later attributes win.
@@ -306,7 +310,7 @@ const toAttributeMap = (
   )
 
 const buildStreamsForTitle = (
-  streamEvents: StreamAttributeEvent[],
+  streamEvents: MakemkvStreamAttributeEvent[],
 ) =>
   Array.from(
     Map.groupBy(
@@ -342,10 +346,10 @@ export const buildTitleGraphFromEvents = (
 ): DiscTitleGraph =>
   ((
     discAttributes: AttributeMap,
-    messageEvents: MessageEvent[],
+    messageEvents: MakemkvMessageEvent[],
     streamEventsByTitleIndex: Map<
       number,
-      StreamAttributeEvent[]
+      MakemkvStreamAttributeEvent[]
     >,
   ) => ({
     discName:
@@ -353,7 +357,7 @@ export const buildTitleGraphFromEvents = (
     discTypeText:
       discAttributes.get(apItemAttributeId.TYPE) ?? "",
     keyFailureMessages: messageEvents.filter(
-      getIsKeyFailureEvent,
+      getIsMakemkvKeyFailureEvent,
     ),
     malformedLineCount: events.filter(
       (event) => event.type === "MALFORMED",

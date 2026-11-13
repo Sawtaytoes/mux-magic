@@ -51,3 +51,11 @@ pnpm dev
 ```
 
 The web interface, API, and Storybook use one port. The default address is `http://localhost:3000`.
+
+## MakeMKV in the image
+
+The [Dockerfile](Dockerfile) copies MakeMKV out of `ghcr.io/jlesage/makemkv`. It also copies the musl loader and two libraries that MakeMKV's `mmgplsrv` helper needs for DVDs. [Rip Deck](https://github.com/Sawtaytoes/rip-deck) has the same block in its Dockerfile, and this one started as a copy of it.
+
+The two copies are deliberate. Docker cannot include one Dockerfile in another, and a shared base image would be a third private image to build, publish, and update for about ten lines. When you change this block, make the same change in Rip Deck, or write down why the two differ. Here, `.github/workflows/makemkv-tag-watcher.yml` bumps the MakeMKV tag. Rip Deck bumps its tag by hand.
+
+The parser for MakeMKV's robot-mode output is not duplicated. Both apps import it from `@mux-magic/tools`.

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto"
 import {
   getLoggingContext,
   logWarning,
+  postJsonWebhook,
 } from "@mux-magic/tools"
 
 import { queueErrorForDelivery } from "../api/jobErrorDeliveryQueue.js"
@@ -12,38 +13,34 @@ import {
 } from "../api/jobErrorStore.js"
 import { WEBHOOK_TIMEOUT_MS } from "./outboundTimeouts.js"
 
-const postWebhook = async (
+const postWebhook = (
   url: string,
   payload: Record<string, unknown>,
-) => {
-  try {
-    const response = await fetch(url, {
-      body: JSON.stringify(payload),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
-    })
-
-    if (!response.ok) {
+) =>
+  postJsonWebhook({
+    body: payload,
+    timeoutMilliseconds: WEBHOOK_TIMEOUT_MS,
+    url,
+  }).then((result) => {
+    if (result.outcome === "rejected") {
       logWarning(
         "WEBHOOK",
-        `POST ${url} returned ${response.status} — ignoring`,
+        `POST ${url} returned ${result.status} — ignoring`,
+      )
+    } else if (result.outcome === "failed") {
+      logWarning(
+        "WEBHOOK",
+        `POST ${url} failed: ${String(result.error)} — ignoring`,
       )
     }
-  } catch (error) {
-    logWarning(
-      "WEBHOOK",
-      `POST ${url} failed: ${String(error)} — ignoring`,
-    )
-  }
-}
+  })
 
 // Crash-path webhook. Called from `process.on("uncaughtException" |
 // "unhandledRejection")` in `server.ts` right before `process.exit(1)`.
-// Uses its own fetch (not `postWebhook`) because:
-//   - the process is about to die: a 5s AbortController cap stops a dead
-//     receiver from extending the restart by Node's default DNS/TCP
-//     timeouts (~75s+ on Linux),
+// Differs from `postWebhook` because:
+//   - the process is about to die: a 5s cap stops a dead receiver from
+//     extending the restart by Node's default DNS/TCP timeouts (~75s+ on
+//     Linux),
 //   - failures here can't be logged through the normal sink — best-effort
 //     `console.error` is the floor.
 export const reportProcessCrashed = async ({
@@ -58,26 +55,21 @@ export const reportProcessCrashed = async ({
   const url = process.env.WEBHOOK_PROCESS_CRASHED_URL
   if (!url) return
 
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), 5000)
-  try {
-    await fetch(url, {
-      body: JSON.stringify({
-        occurredAt: new Date().toISOString(),
-        reason,
-        source,
-        stack,
-      }),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-      signal: controller.signal,
-    })
-  } catch (error) {
+  const result = await postJsonWebhook({
+    body: {
+      occurredAt: new Date().toISOString(),
+      reason,
+      source,
+      stack,
+    },
+    timeoutMilliseconds: 5000,
+    url,
+  })
+
+  if (result.outcome === "failed") {
     console.error(
-      `[WEBHOOK] Crash webhook POST failed: ${String(error)}`,
+      `[WEBHOOK] Crash webhook POST failed: ${String(result.error)}`,
     )
-  } finally {
-    clearTimeout(timer)
   }
 }
 

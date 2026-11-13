@@ -2,8 +2,12 @@ import { spawn } from "node:child_process"
 import readline from "node:readline"
 
 import {
+  getIsMakemkvKeyFailureEvent,
+  getMakemkvSavedTitleCount,
   logAndRethrowPipelineError,
   logInfo,
+  type MakemkvEvent,
+  parseMakemkvLine,
 } from "@mux-magic/tools"
 import { Observable } from "rxjs"
 
@@ -13,12 +17,6 @@ import {
   makeMkvHomePath,
 } from "../tools/appPaths.js"
 import { buildKeyFailureError } from "../tools/makemkv/buildKeyFailureError.js"
-import {
-  getIsKeyFailureEvent,
-  getSavedTitleCount,
-  type MakemkvEvent,
-} from "../tools/makemkv/makemkvEvents.js"
-import { parseMakemkvLine } from "../tools/makemkv/parseLine.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
@@ -134,9 +132,10 @@ export const runMakeMkvConExtract = ({
       tracker?.finish()
 
       const keyFailureMessages = events.filter(
-        getIsKeyFailureEvent,
+        getIsMakemkvKeyFailureEvent,
       )
-      const savedTitleCount = getSavedTitleCount(events)
+      const savedTitleCount =
+        getMakemkvSavedTitleCount(events)
 
       // Checked BEFORE the exit code, because makemkvcon exits 0 on a key
       // failure just as it does on success.

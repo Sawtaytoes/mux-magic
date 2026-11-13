@@ -1,10 +1,10 @@
 /**
  * Field scanner for MakeMKV robot-mode lines.
  *
- * Ported from rip-deck `packages/daemon/src/makemkv/scanFields.ts`
- * (2026-08-12), rewritten from its `while` + `let` scanner into a reduce
- * over characters to satisfy this repo's code rules. Behaviour is pinned
- * by the ported test suite.
+ * Shared by mux-magic and rip-deck. It began as rip-deck's
+ * `packages/daemon/src/makemkv/scanFields.ts` and was rewritten from its
+ * `while` + `let` scanner into a reduce over characters. Both apps' test
+ * suites pin its behaviour.
  *
  * Hand-rolled on purpose. A CSV library is the obvious reach and it is
  * wrong here, because makemkvcon does not emit CSV:
@@ -25,7 +25,7 @@
  * field STARTS with `"`. Anywhere else a quote is just a character.
  */
 
-export type ScannedLine = {
+export type ScannedMakemkvLine = {
   prefix: string
   fields: string[]
 }
@@ -149,14 +149,16 @@ const applyPlainCharacter = ({
 /**
  * Split the payload of a robot-mode line into raw fields.
  *
- * Exported separately from `scanLine` so it can be tested against
+ * Exported separately from `scanMakemkvLine` so it can be tested against
  * pathological values directly.
  *
  * An unterminated quote is tolerated rather than thrown: a truncated log
  * line (killed mid-write, which happens every time a rip is killed)
  * should degrade to a best-effort value, not take down the parser.
  */
-export const scanFields = (payload: string) =>
+export const scanMakemkvFields = (
+  payload: string,
+): string[] =>
   ((finalState: ScanState) =>
     finalState.completedFields.concat(
       finalState.isAfterEscape
@@ -189,16 +191,16 @@ const robotPrefixPattern = /^[A-Z]{3,6}$/
  * is a separator — message text is full of them ("Error: ...", timecodes,
  * device paths).
  */
-export const scanLine = (
+export const scanMakemkvLine = (
   line: string,
-): ScannedLine | null =>
+): ScannedMakemkvLine | null =>
   ((trimmed: string) =>
     ((colonIndex: number) =>
       colonIndex <= 0 ||
       !robotPrefixPattern.test(trimmed.slice(0, colonIndex))
         ? null
         : {
-            fields: scanFields(
+            fields: scanMakemkvFields(
               trimmed.slice(colonIndex + 1),
             ),
             prefix: trimmed.slice(0, colonIndex),

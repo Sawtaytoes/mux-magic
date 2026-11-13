@@ -5,10 +5,12 @@ import {
   getLatestJobProgress,
   getSubject,
 } from "@mux-magic/core/src/api/jobStore.js"
-import { registerLogSink } from "@mux-magic/tools"
+import {
+  registerLogSink,
+  startSseKeepalive,
+} from "@mux-magic/tools"
 import { streamSSE } from "hono/streaming"
 import * as schemas from "../schemas.js"
-import { startSseKeepalive } from "../sseKeepalive.js"
 
 export const logsRoutes = new OpenAPIHono()
 
@@ -61,7 +63,7 @@ logsRoutes.openapi(
 
     context.header("X-Accel-Buffering", "no")
     return streamSSE(context, async (stream) => {
-      const stopKeepalive = startSseKeepalive(stream)
+      const stopKeepalive = startSseKeepalive({ stream })
 
       const send = (payload: object) =>
         stream.writeSSE({
@@ -252,7 +254,7 @@ logsRoutes.openapi(
   (context) => {
     context.header("X-Accel-Buffering", "no")
     return streamSSE(context, async (stream) => {
-      const stopKeepalive = startSseKeepalive(stream)
+      const stopKeepalive = startSseKeepalive({ stream })
 
       const unregister = registerLogSink((record) => {
         stream

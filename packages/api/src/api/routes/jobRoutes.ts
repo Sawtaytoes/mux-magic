@@ -6,6 +6,7 @@ import {
   getJob,
   jobEvents$,
 } from "@mux-magic/core/src/api/jobStore.js"
+import { startSseKeepalive } from "@mux-magic/tools"
 import { streamSSE } from "hono/streaming"
 import { z } from "zod"
 import { isFakeRequest } from "../../fake-data/index.js"
@@ -15,7 +16,6 @@ import {
   parseStatusFilter,
 } from "../jobStreamFilter.js"
 import * as schemas from "../schemas.js"
-import { startSseKeepalive } from "../sseKeepalive.js"
 
 const jobDetailSchema = z.object({
   id: z.string().describe("Job ID"),
@@ -160,7 +160,7 @@ jobRoutes.openapi(
     )
 
     return streamSSE(context, async (stream) => {
-      const stopKeepalive = startSseKeepalive(stream)
+      const stopKeepalive = startSseKeepalive({ stream })
 
       const send = (job: object) =>
         stream.writeSSE({ data: JSON.stringify(job) })

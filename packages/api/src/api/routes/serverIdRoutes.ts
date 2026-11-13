@@ -1,9 +1,8 @@
 import { randomBytes } from "node:crypto"
 
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi"
+import { startSseKeepalive } from "@mux-magic/tools"
 import { streamSSE } from "hono/streaming"
-
-import { startSseKeepalive } from "../sseKeepalive.js"
 
 // Generated once per process. Stays constant for the lifetime of the
 // server and changes on every restart, so a client that compares the
@@ -38,7 +37,7 @@ serverIdRoutes.openapi(
   (context) => {
     context.header("X-Accel-Buffering", "no")
     return streamSSE(context, async (stream) => {
-      const stopKeepalive = startSseKeepalive(stream)
+      const stopKeepalive = startSseKeepalive({ stream })
 
       await stream.writeSSE({
         data: JSON.stringify({ bootId }),
