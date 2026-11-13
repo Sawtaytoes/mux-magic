@@ -1,7 +1,14 @@
+import * as fsPromises from "node:fs/promises"
 import { join } from "node:path"
 import { vol } from "memfs"
 import { EmptyError, firstValueFrom } from "rxjs"
-import { describe, expect, test } from "vitest"
+import {
+  afterEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest"
 import { captureLogMessage } from "./captureLogMessage.js"
 import {
   createRenameFileOrFolderObservable,
@@ -91,6 +98,10 @@ describe(renameFileOrFolder.name, () => {
 })
 
 describe(`${renameFileOrFolder.name} claims names atomically`, () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   test("two concurrent renames into one name keep both files", async () => {
     vol.fromJSON({
       "/anime/first.mkv": "first",
@@ -167,6 +178,63 @@ describe(`${renameFileOrFolder.name} claims names atomically`, () => {
     expect(
       vol.readFileSync("/anime/first.mkv", "utf8"),
     ).toBe("first")
+  })
+
+  test("without hard links, a file that appears at the target is kept", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+    })
+    vi.spyOn(fsPromises, "link").mockImplementationOnce(
+      async () => {
+        // Another writer takes the name after the absence check, and
+        // the file system has no hard links.
+        vol.writeFileSync(
+          "/anime/Show - s01e01.mkv",
+          "other",
+        )
+        throw Object.assign(new Error("EPERM: no links"), {
+          code: "EPERM",
+        })
+      },
+    )
+
+    await expect(
+      firstValueFrom(
+        renameFileOrFolder({
+          newPath: "/anime/Show - s01e01.mkv",
+          oldPath: "/anime/first.mkv",
+        }),
+      ),
+    ).rejects.toContain("already exists")
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("other")
+    expect(
+      vol.readFileSync("/anime/first.mkv", "utf8"),
+    ).toBe("first")
+  })
+
+  test("without hard links, a file still renames into a free name", async () => {
+    vol.fromJSON({
+      "/anime/first.mkv": "first",
+    })
+    vi.spyOn(fsPromises, "link").mockRejectedValueOnce(
+      Object.assign(new Error("EPERM: no links"), {
+        code: "EPERM",
+      }),
+    )
+
+    await firstValueFrom(
+      renameFileOrFolder({
+        newPath: "/anime/Show - s01e01.mkv",
+        oldPath: "/anime/first.mkv",
+      }),
+    )
+
+    expect(
+      vol.readFileSync("/anime/Show - s01e01.mkv", "utf8"),
+    ).toBe("first")
+    expect(vol.existsSync("/anime/first.mkv")).toBe(false)
   })
 
   test("renames a folder", async () => {

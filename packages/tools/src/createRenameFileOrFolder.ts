@@ -1,6 +1,7 @@
 import {
   link,
   lstat,
+  open,
   rename,
   stat,
   unlink,
@@ -59,11 +60,53 @@ const isTargetAbsent = (newPath: string) =>
         : Promise.reject(error),
   )
 
+// Removes the empty placeholder this rename created, but only while it
+// is still empty, so a file someone else wrote there is never deleted.
+const removeEmptyPlaceholder = (newPath: string) =>
+  stat(newPath)
+    .then((stats) =>
+      stats.isFile() && stats.size === 0
+        ? unlink(newPath)
+        : undefined,
+    )
+    .catch(() => undefined)
+
+// Without hard links, the name is claimed by creating an empty file with
+// the exclusive `wx` flag, which fails with EEXIST when the name is
+// taken. The source then renames over this placeholder. A failed rename
+// removes the placeholder again.
+const moveFileThroughPlaceholder = ({
+  newPath,
+  oldPath,
+}: {
+  newPath: string
+  oldPath: string
+}) =>
+  open(newPath, "wx").then(
+    (fileHandle) =>
+      fileHandle
+        .close()
+        .then(() =>
+          rename(oldPath, newPath).catch(
+            (renameError: unknown) =>
+              removeEmptyPlaceholder(newPath).then(() =>
+                Promise.reject(renameError),
+              ),
+          ),
+        ),
+    (error: unknown) =>
+      hasErrorCode(error, "EEXIST")
+        ? Promise.reject(
+            buildAlreadyExistsMessage({ newPath, oldPath }),
+          )
+        : Promise.reject(error),
+  )
+
 // For a file, `link` fails with EEXIST when the name is taken, and the
 // kernel checks and creates the name in one step, so another process
-// cannot slip a file in between. Folders cannot be hard-linked, and some
-// file systems have no hard links; those use `rename`, which the
-// in-process claim and the ENOENT check still protect.
+// cannot slip a file in between. A file system without hard links
+// claims the name with an exclusive placeholder instead. Neither path
+// can replace a file another writer put there.
 const moveFileIntoFreeName = ({
   newPath,
   oldPath,
@@ -78,9 +121,12 @@ const moveFileIntoFreeName = ({
         ? Promise.reject(
             buildAlreadyExistsMessage({ newPath, oldPath }),
           )
-        : rename(oldPath, newPath),
+        : moveFileThroughPlaceholder({ newPath, oldPath }),
   )
 
+// Folders cannot be hard-linked. `rename` refuses to replace a folder
+// that has anything in it (and refuses a file), so a folder rename can
+// only ever replace an empty folder.
 const moveIntoFreeName = ({
   newPath,
   oldPath,

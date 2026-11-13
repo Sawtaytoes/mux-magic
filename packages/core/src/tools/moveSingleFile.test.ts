@@ -17,6 +17,14 @@ vi.mock("./currentEnvironment.js", () => ({
   getPlatform: vi.fn(() => "linux"),
 }))
 
+const listSetAsideFiles = () =>
+  vol
+    .readdirSync("/work")
+    .map(String)
+    .filter((name) =>
+      name.startsWith("episode.mkv.muxmagic-replaced-"),
+    )
+
 const buildCodeError = (code: string) =>
   Object.assign(new Error(`${code}: simulated failure`), {
     code,
@@ -129,6 +137,61 @@ describe(moveSingleFile.name, () => {
     ).toBe("new bytes")
   })
 
+  test("keeps the existing destination when the final rename of a cross-volume copy fails", async () => {
+    vol.fromJSON({
+      "/work/new/episode.mkv": "new bytes",
+      "/work/episode.mkv": "old bytes",
+    })
+    vi.spyOn(fsPromises, "rename")
+      .mockRejectedValueOnce(buildCodeError("EXDEV"))
+      .mockRejectedValueOnce(buildCodeError("EIO"))
+
+    await expect(
+      moveSingleFile({
+        copyOptions: {},
+        destinationPath: "/work/episode.mkv",
+        isOverwriteAllowed: true,
+        sourcePath: "/work/new/episode.mkv",
+      }),
+    ).rejects.toMatchObject({ code: "EIO" })
+
+    expect(
+      vol.readFileSync("/work/episode.mkv", "utf8"),
+    ).toBe("old bytes")
+    expect(
+      vol.readFileSync("/work/new/episode.mkv", "utf8"),
+    ).toBe("new bytes")
+  })
+
+  test("on Windows, never touches an unrelated file that looks like a set-aside name", async () => {
+    vi.mocked(getPlatform).mockReturnValue("win32")
+    vol.fromJSON({
+      "/work/new/episode.mkv": "new bytes",
+      "/work/episode.mkv": "old bytes",
+      "/work/episode.mkv.muxmagic-replaced": "unrelated",
+    })
+    vi.spyOn(fsPromises, "rename").mockRejectedValueOnce(
+      buildCodeError("EPERM"),
+    )
+
+    await moveSingleFile({
+      copyOptions: {},
+      destinationPath: "/work/episode.mkv",
+      isOverwriteAllowed: true,
+      sourcePath: "/work/new/episode.mkv",
+    })
+
+    expect(
+      vol.readFileSync(
+        "/work/episode.mkv.muxmagic-replaced",
+        "utf8",
+      ),
+    ).toBe("unrelated")
+    expect(
+      vol.readFileSync("/work/episode.mkv", "utf8"),
+    ).toBe("new bytes")
+  })
+
   test("on Windows, sets the destination aside when rename refuses to replace it, then removes it", async () => {
     vi.mocked(getPlatform).mockReturnValue("win32")
     vol.fromJSON({
@@ -150,9 +213,7 @@ describe(moveSingleFile.name, () => {
     expect(
       vol.readFileSync("/work/episode.mkv", "utf8"),
     ).toBe("new bytes")
-    expect(
-      vol.existsSync("/work/episode.mkv.muxmagic-replaced"),
-    ).toBe(false)
+    expect(listSetAsideFiles()).toEqual([])
   })
 
   test("on Windows, restores the destination when the second rename fails too", async () => {
@@ -181,9 +242,7 @@ describe(moveSingleFile.name, () => {
     expect(
       vol.readFileSync("/work/episode.mkv", "utf8"),
     ).toBe("old bytes")
-    expect(
-      vol.existsSync("/work/episode.mkv.muxmagic-replaced"),
-    ).toBe(false)
+    expect(listSetAsideFiles()).toEqual([])
     expect(
       vol.readFileSync("/work/new/episode.mkv", "utf8"),
     ).toBe("new bytes")

@@ -11,11 +11,12 @@
 
 A command that moves or cleans up files deletes nothing it has not confirmed is safe to lose:
 
-- A move renames over the destination. It never deletes the destination first. Only on Windows, and only after a plain rename refused to replace the file, the old destination is renamed aside, and it is deleted after the new file is in place. A failed rename puts it back.
+- A move, and the final step of `aclSafeCopyFile`, rename over the destination through `renameOntoDestination` in `@mux-magic/tools`. Neither deletes the destination first. Only on Windows, and only after a plain rename refused to replace the file, the old destination is renamed aside to a unique name, and it is deleted after the new file is in place. A failed rename puts it back.
 - `flattenOutput` and `flattenChildFolders` remove a folder with `rmdir`, so only an empty folder goes. A folder that still holds a nested subfolder or file is kept, and its leftover entries are logged as a warning.
-- `deleteCopiedOriginals` checks each original against its copy before it deletes anything. The copy paths come from the copy step's `copiedDestinationPaths` output, in the same order as `copiedSourcePaths`. A missing copy, a size difference, or a missing list stops the step, and nothing is deleted.
+- `deleteCopiedOriginals` checks each original against its copy before it deletes anything. The copy paths come from the copy step's `copiedDestinationPaths` output, in the same order as `copiedSourcePaths`. A missing copy, a size difference, a missing list, or a copy that resolves (through a symbolic link, or because pairs are crossed) to something the step deletes stops the step, and nothing is deleted.
 - `deleteFolder` and `deleteCopiedOriginals` delete through `deletePath` in `tools/deleteFiles.ts`, so they get its path check and honor `DELETE_MODE` (trash by default).
-- `renameFileOrFolder` treats only `ENOENT` as a free name, and claims the name before it renames, so two renames into one name cannot replace each other.
+- `renameFileOrFolder` treats only `ENOENT` as a free name, and claims the name before it renames, so two renames into one name cannot replace each other. A file moves with `link` and `unlink`; where hard links are not available, an empty placeholder created with the exclusive `wx` flag claims the name. A folder moves with `rename`, which cannot replace a folder that has anything in it.
+- `deleteFolder` removes a work folder, not the original of a copy, so it has no copy to confirm. Its safety is the `confirm` flag, the path check, and `DELETE_MODE`.
 
 ## Context
 

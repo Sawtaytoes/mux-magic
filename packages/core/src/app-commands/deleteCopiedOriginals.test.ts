@@ -285,6 +285,82 @@ describe(deleteCopiedOriginals.name, () => {
         ).resolves.toBeDefined()
       }))
 
+    test("when the copy is a symbolic link to the original", async () =>
+      captureConsoleMessage("error", async () => {
+        vol.fromJSON({
+          "/staging/ep01.mkv": "ep1",
+        })
+        vol.mkdirSync("/library", { recursive: true })
+        vol.symlinkSync(
+          "/staging/ep01.mkv",
+          "/library/ep01.mkv",
+        )
+
+        await expect(
+          firstValueFrom(
+            deleteCopiedOriginals({
+              copiedDestinationPaths: ["/library/ep01.mkv"],
+              pathsToDelete: ["/staging/ep01.mkv"],
+            }).pipe(toArray()),
+          ),
+        ).rejects.toThrow(/which this step would delete/)
+
+        expect(
+          vol.readFileSync("/staging/ep01.mkv", "utf8"),
+        ).toBe("ep1")
+      }))
+
+    test("when the pairs are crossed so each copy is another original", async () =>
+      captureConsoleMessage("error", async () => {
+        vol.fromJSON({
+          "/staging/a.mkv": "same",
+          "/staging/b.mkv": "same",
+        })
+
+        await expect(
+          firstValueFrom(
+            deleteCopiedOriginals({
+              copiedDestinationPaths: [
+                "/staging/b.mkv",
+                "/staging/a.mkv",
+              ],
+              pathsToDelete: [
+                "/staging/a.mkv",
+                "/staging/b.mkv",
+              ],
+            }).pipe(toArray()),
+          ),
+        ).rejects.toThrow(/which this step would delete/)
+
+        expect(vol.existsSync("/staging/a.mkv")).toBe(true)
+        expect(vol.existsSync("/staging/b.mkv")).toBe(true)
+      }))
+
+    test("when a copied folder links back into the original folder", async () =>
+      captureConsoleMessage("error", async () => {
+        vol.fromJSON({
+          "/staging/Show/ep01.mkv": "ep1",
+        })
+        vol.mkdirSync("/library/Show", { recursive: true })
+        vol.symlinkSync(
+          "/staging/Show/ep01.mkv",
+          "/library/Show/ep01.mkv",
+        )
+
+        await expect(
+          firstValueFrom(
+            deleteCopiedOriginals({
+              copiedDestinationPaths: ["/library/Show"],
+              pathsToDelete: ["/staging/Show"],
+            }).pipe(toArray()),
+          ),
+        ).rejects.toThrow(/which this step would delete/)
+
+        expect(
+          vol.existsSync("/staging/Show/ep01.mkv"),
+        ).toBe(true)
+      }))
+
     test("when the path is relative", async () =>
       captureConsoleMessage("error", async () => {
         vol.fromJSON({

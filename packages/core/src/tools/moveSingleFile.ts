@@ -1,8 +1,8 @@
-import { rename, stat, unlink } from "node:fs/promises"
+import { stat, unlink } from "node:fs/promises"
 import {
   aclSafeCopyFile,
   type CopyOptions,
-  logWarning,
+  renameOntoDestination,
 } from "@mux-magic/tools"
 
 import { getPlatform } from "./currentEnvironment.js"
@@ -47,70 +47,6 @@ export const checkDestination = async (
   return true
 }
 
-// Windows can refuse a rename onto an existing file (EPERM or EACCES,
-// for example on some network shares). Only there, and only after the
-// plain rename failed, the old destination is first renamed aside, so a
-// failed rename can put it back. It is deleted only after the new file
-// is in place. Everywhere else `rename` replaces the destination in one
-// atomic step, and nothing is deleted first.
-const isWindowsReplaceRefusal = (error: unknown) =>
-  getPlatform() === "win32" &&
-  (hasErrorCode(error, "EPERM") ||
-    hasErrorCode(error, "EACCES"))
-
-const getSetAsidePath = (destinationPath: string) =>
-  `${destinationPath}.muxmagic-replaced`
-
-const renameWithDestinationSetAside = ({
-  destinationPath,
-  sourcePath,
-}: {
-  destinationPath: string
-  sourcePath: string
-}) =>
-  rename(
-    destinationPath,
-    getSetAsidePath(destinationPath),
-  ).then(() =>
-    rename(sourcePath, destinationPath).then(
-      () =>
-        unlink(getSetAsidePath(destinationPath)).catch(
-          (error: unknown) => {
-            logWarning(
-              "COULD NOT REMOVE REPLACED FILE",
-              getSetAsidePath(destinationPath),
-              String(error),
-            )
-          },
-        ),
-      (renameError: unknown) =>
-        rename(
-          getSetAsidePath(destinationPath),
-          destinationPath,
-        ).then(() => Promise.reject(renameError)),
-    ),
-  )
-
-const renameOntoDestination = ({
-  destinationPath,
-  hasExistingDestination,
-  sourcePath,
-}: {
-  destinationPath: string
-  hasExistingDestination: boolean
-  sourcePath: string
-}) =>
-  rename(sourcePath, destinationPath).catch(
-    (error: unknown) =>
-      hasExistingDestination &&
-      isWindowsReplaceRefusal(error)
-        ? renameWithDestinationSetAside({
-            destinationPath,
-            sourcePath,
-          })
-        : Promise.reject(error),
-  )
-
 // Same-volume rename short-circuit: metadata-only O(1) move. EXDEV
 // (cross-volume) triggers the streaming-copy fallback, which retains
 // per-byte progress and the AbortController wiring.
@@ -133,6 +69,7 @@ export const moveSingleFile = async ({
     await renameOntoDestination({
       destinationPath,
       hasExistingDestination,
+      platform: getPlatform(),
       sourcePath,
     })
     return "renamed"

@@ -1,6 +1,12 @@
 import type { Stats } from "node:fs"
-import { readdir, stat } from "node:fs/promises"
-import { isAbsolute, join, resolve } from "node:path"
+import { readdir, realpath, stat } from "node:fs/promises"
+import {
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path"
 import {
   logAndRethrowPipelineError,
   logInfo,
@@ -28,9 +34,10 @@ import { hasErrorCode } from "../tools/moveSingleFile.js"
 // The two lists pair up by position: `copiedDestinationPaths[index]` is
 // the copy of `pathsToDelete[index]`. Before anything is deleted, every
 // original is checked against its copy: the copy must exist, a file must
-// have the same size, and a folder's copy must hold a same-size copy of
-// every file inside it. If any check fails, nothing is deleted and the
-// step fails with the list of problems.
+// have the same size, a folder's copy must hold a same-size copy of
+// every file inside it, and no copy may resolve (through a link, or a
+// crossed pair) to anything this step deletes. If any check fails,
+// nothing is deleted and the step fails with the list of problems.
 //
 // Is a no-op (emits nothing, completes immediately) when `pathsToDelete`
 // is empty — this covers the case where a prior copy step matched zero
@@ -47,11 +54,52 @@ const getStatsOrNull = (path: string) =>
       : Promise.reject(error),
   )
 
+const isSameOrInside = ({
+  folderPath,
+  path,
+}: {
+  folderPath: string
+  path: string
+}) => {
+  const relativePath = relative(folderPath, path)
+  return (
+    relativePath === "" ||
+    (relativePath !== ".." &&
+      !relativePath.startsWith(`..${sep}`) &&
+      !isAbsolute(relativePath))
+  )
+}
+
+// A "copy" that resolves (through a symbolic link, or because the pairs
+// are crossed) to something this step is about to delete is no copy at
+// all: it would disappear with the originals.
+const findCopyInsideDeletedPaths = ({
+  copyPath,
+  deletedRealPaths,
+}: {
+  copyPath: string
+  deletedRealPaths: string[]
+}) =>
+  realpath(copyPath).then((copyRealPath) =>
+    deletedRealPaths.some((deletedRealPath) =>
+      isSameOrInside({
+        folderPath: deletedRealPath,
+        path: copyRealPath,
+      }),
+    )
+      ? [
+          `The copy "${copyPath}" resolves to "${copyRealPath}", which this step would delete.`,
+        ]
+      : [],
+  )
+
 const compareFolderEntries = ({
   copyPath,
+  deletedRealPaths,
   originalPath,
 }: {
   copyPath: string
+  deletedRealPaths: string[]
   originalPath: string
 }): Promise<string[]> =>
   readdir(originalPath).then((entryNames) =>
@@ -59,6 +107,7 @@ const compareFolderEntries = ({
       entryNames.map((entryName) =>
         findCopyProblems({
           copyPath: join(copyPath, entryName),
+          deletedRealPaths,
           originalPath: join(originalPath, entryName),
         }),
       ),
@@ -68,11 +117,13 @@ const compareFolderEntries = ({
 const compareStats = ({
   copyPath,
   copyStats,
+  deletedRealPaths,
   originalPath,
   originalStats,
 }: {
   copyPath: string
   copyStats: Stats | null
+  deletedRealPaths: string[]
   originalPath: string
   originalStats: Stats | null
 }): Promise<string[]> =>
@@ -84,22 +135,31 @@ const compareStats = ({
         ])
       : originalStats.isDirectory()
         ? copyStats.isDirectory()
-          ? compareFolderEntries({ copyPath, originalPath })
+          ? compareFolderEntries({
+              copyPath,
+              deletedRealPaths,
+              originalPath,
+            })
           : Promise.resolve([
               `The copy of folder "${originalPath}" at "${copyPath}" is not a folder.`,
             ])
         : copyStats.isFile() &&
             copyStats.size === originalStats.size
-          ? Promise.resolve([])
+          ? findCopyInsideDeletedPaths({
+              copyPath,
+              deletedRealPaths,
+            })
           : Promise.resolve([
               `The copy of "${originalPath}" at "${copyPath}" does not match its size.`,
             ])
 
 const findCopyProblems = ({
   copyPath,
+  deletedRealPaths,
   originalPath,
 }: {
   copyPath: string
+  deletedRealPaths: string[]
   originalPath: string
 }): Promise<string[]> =>
   !isAbsolute(originalPath) || !isAbsolute(copyPath)
@@ -117,10 +177,28 @@ const findCopyProblems = ({
           compareStats({
             copyPath,
             copyStats,
+            deletedRealPaths,
             originalPath,
             originalStats,
           }),
         )
+
+// The real (link-resolved) location of every original that still
+// exists. Relative paths are skipped here; they are refused per pair.
+const getDeletedRealPaths = (pathsToDelete: string[]) =>
+  Promise.all(
+    pathsToDelete
+      .filter((pathToDelete) => isAbsolute(pathToDelete))
+      .map((pathToDelete) =>
+        realpath(pathToDelete).catch((error: unknown) =>
+          hasErrorCode(error, "ENOENT")
+            ? null
+            : Promise.reject(error),
+        ),
+      ),
+  ).then((realPaths) =>
+    realPaths.filter((realPath) => realPath !== null),
+  )
 
 const findAllCopyProblems = ({
   copiedDestinationPaths,
@@ -130,14 +208,18 @@ const findAllCopyProblems = ({
   pathsToDelete: string[]
 }) =>
   copiedDestinationPaths.length === pathsToDelete.length
-    ? Promise.all(
-        pathsToDelete.map((originalPath, index) =>
-          findCopyProblems({
-            copyPath: copiedDestinationPaths[index],
-            originalPath,
-          }),
-        ),
-      ).then((problemLists) => problemLists.flat())
+    ? getDeletedRealPaths(pathsToDelete).then(
+        (deletedRealPaths) =>
+          Promise.all(
+            pathsToDelete.map((originalPath, index) =>
+              findCopyProblems({
+                copyPath: copiedDestinationPaths[index],
+                deletedRealPaths,
+                originalPath,
+              }),
+            ),
+          ).then((problemLists) => problemLists.flat()),
+      )
     : Promise.resolve([
         `Got ${pathsToDelete.length} paths to delete but ${copiedDestinationPaths.length} copied destination paths. Link copiedDestinationPaths from the same copy step as pathsToDelete.`,
       ])
