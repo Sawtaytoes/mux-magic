@@ -1,12 +1,10 @@
 import { join } from "node:path"
-
-import { describe, expect, test, vi } from "vitest"
-
 import {
-  getSavedTitleCount,
+  getMakemkvSavedTitleCount,
   makemkvMessageCode,
-} from "./makemkvEvents.js"
-import { parseMakemkvLine } from "./parseLine.js"
+  parseMakemkvLine,
+} from "@mux-magic/tools"
+import { describe, expect, test, vi } from "vitest"
 
 // vitest.setup.ts swaps node:fs for memfs, so the fixtures need the real one.
 const realFs =
@@ -26,10 +24,10 @@ const loadEvents = (fixtureName: string) =>
     .filter((line) => line.trim() !== "")
     .map(parseMakemkvLine)
 
-describe(getSavedTitleCount.name, () => {
+describe(getMakemkvSavedTitleCount.name, () => {
   test("reads the count off a real `mkv` extraction", () => {
     expect(
-      getSavedTitleCount(
+      getMakemkvSavedTitleCount(
         loadEvents(
           "desk-set-bluray-extract-title.robot.log",
         ),
@@ -59,7 +57,7 @@ describe(getSavedTitleCount.name, () => {
 
   test("returns null when nothing reported a count", () => {
     expect(
-      getSavedTitleCount(
+      getMakemkvSavedTitleCount(
         loadEvents("desk-set-bluray.robot.log"),
       ),
     ).toBeNull()

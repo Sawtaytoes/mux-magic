@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process"
 
 import {
+  getIsMakemkvKeyFailureEvent,
   logAndSwallowPipelineError,
   logInfo,
+  parseMakemkvLine,
 } from "@mux-magic/tools"
 import { Observable } from "rxjs"
 
@@ -11,8 +13,6 @@ import {
   makeMkvHomePath,
 } from "../tools/appPaths.js"
 import { buildKeyFailureError } from "../tools/makemkv/buildKeyFailureError.js"
-import { getIsKeyFailureEvent } from "../tools/makemkv/makemkvEvents.js"
-import { parseMakemkvLine } from "../tools/makemkv/parseLine.js"
 import {
   buildTitleGraphFromEvents,
   type DiscTitleGraph,
@@ -106,7 +106,7 @@ export const runMakeMkvCon = ({
         .map(parseMakemkvLine)
 
       const keyFailureMessages = events.filter(
-        getIsKeyFailureEvent,
+        getIsMakemkvKeyFailureEvent,
       )
 
       // Checked BEFORE the exit code, because makemkvcon exits 0 on a key

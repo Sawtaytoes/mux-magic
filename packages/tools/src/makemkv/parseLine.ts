@@ -1,15 +1,15 @@
 import type {
   MakemkvEvent,
-  MalformedEvent,
+  MakemkvMalformedEvent,
 } from "./makemkvEvents.js"
-import { scanLine } from "./scanFields.js"
+import { scanMakemkvLine } from "./scanFields.js"
 
 /**
  * Turn one line of `makemkvcon -r` output into a typed event.
  *
- * Ported from rip-deck `packages/daemon/src/makemkv/parseLine.ts`
- * (2026-08-12), rewritten from its `switch` + early-return shape into a
- * prefix→parser lookup to satisfy this repo's code rules.
+ * Shared by mux-magic and rip-deck. It began as rip-deck's
+ * `packages/daemon/src/makemkv/parseLine.ts` and was rewritten from its
+ * `switch` + early-return shape into a prefix→parser lookup.
  *
  * Design rules, each of which exists because getting it wrong is a known
  * failure mode:
@@ -18,7 +18,7 @@ import { scanLine } from "./scanFields.js"
  *    line would otherwise produce `undefined` where a string is typed,
  *    and the failure surfaces far away from the cause.
  *  - An unparseable line becomes a MALFORMED event, never an exception.
- *    One weird line must not kill a 3-hour analysis.
+ *    One weird line must not kill a 3-hour rip or analysis.
  *  - Field counts come from real output, not the docs. TINFO and SINFO
  *    carry index prefixes the docs omit, and DRV has seven fields where
  *    the docs imply six.
@@ -32,7 +32,7 @@ const createMalformedEvent = ({
   prefix: string
   raw: string
   reason: string
-}): MalformedEvent => ({
+}): MakemkvMalformedEvent => ({
   prefix,
   raw,
   reason,
@@ -399,4 +399,6 @@ export const parseMakemkvLine = (
           fields: scanned.fields,
           line,
         })
-      : { raw: line, type: "UNKNOWN" })(scanLine(line))
+      : { raw: line, type: "UNKNOWN" })(
+    scanMakemkvLine(line),
+  )
