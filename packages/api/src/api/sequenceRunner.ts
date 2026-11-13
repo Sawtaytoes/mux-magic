@@ -8,6 +8,7 @@ import {
   updateJob,
 } from "@mux-magic/core/src/api/jobStore.js"
 import { withJobContext } from "@mux-magic/core/src/api/logCapture.js"
+import { findCommandPathsOutsideAllowedRoots } from "@mux-magic/core/src/tools/pathSafety.js"
 import {
   resolveDefaultThreadCount,
   resolveMaxThreads,
@@ -440,6 +441,19 @@ export const runSequenceJob = (
       string,
       unknown
     >
+    const pathProblems =
+      findCommandPathsOutsideAllowedRoots(validatedParams)
+    if (pathProblems.length > 0) {
+      const message = `Paths outside the allowed file roots for "${step.command}": ${pathProblems.join("; ")}`
+      logError("SEQUENCE", `Step ${stepId}: ${message}`)
+      updateJob(childId, {
+        completedAt: new Date(),
+        error: message,
+        status: "failed",
+      })
+      completeSubject(childId)
+      return { kind: "failed", stepId, error: message }
+    }
 
     logInfo(
       "SEQUENCE",

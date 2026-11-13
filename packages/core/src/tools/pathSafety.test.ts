@@ -9,6 +9,7 @@ import {
 } from "vitest"
 
 import {
+  findCommandPathsOutsideAllowedRoots,
   getAllowedFileRoots,
   PathSafetyError,
   validateReadablePath,
@@ -147,5 +148,50 @@ describe(validateWritablePath.name, () => {
     expect(() =>
       validateWritablePath("/media/../etc/passwd"),
     ).toThrow(/traversal not allowed/)
+  })
+})
+
+describe(findCommandPathsOutsideAllowedRoots.name, () => {
+  const originalRoots = process.env.ALLOWED_FILE_ROOTS
+
+  afterEach(() => {
+    if (originalRoots === undefined) {
+      delete process.env.ALLOWED_FILE_ROOTS
+    } else {
+      process.env.ALLOWED_FILE_ROOTS = originalRoots
+    }
+  })
+
+  test("reports each path parameter outside the roots, including arrays", () => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+
+    expect(
+      findCommandPathsOutsideAllowedRoots({
+        destinationPath: "/media/Movies",
+        pathsToDelete: ["/media/a.mkv", "/outside/b.mkv"],
+        sourcePath: "/outside",
+      }).map((problem) => problem.split(":")[0]),
+    ).toEqual(["pathsToDelete", "sourcePath"])
+  })
+
+  test("ignores rootPath, which names a media player's path", () => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+
+    expect(
+      findCommandPathsOutsideAllowedRoots({
+        rootPath: "/data/movies",
+        sourcePath: "/media/Movies",
+      }),
+    ).toEqual([])
+  })
+
+  test("reports nothing when there is no limit", () => {
+    delete process.env.ALLOWED_FILE_ROOTS
+
+    expect(
+      findCommandPathsOutsideAllowedRoots({
+        sourcePath: "relative/path",
+      }),
+    ).toEqual([])
   })
 })

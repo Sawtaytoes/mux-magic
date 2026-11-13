@@ -73,7 +73,7 @@ All settings are optional. The complete commented list is in [`.env.example`](..
 
 ### File deletion
 
-`ALLOWED_FILE_ROOTS` limits where the file explorer and music routes may delete, rename, move, or write files. It is a list of absolute paths, split by `:` on Linux and macOS and by `;` on Windows. When it is unset, the container image is limited to `/media`, and a source installation has no limit. Reading and listing files are not limited.
+`ALLOWED_FILE_ROOTS` limits where the file explorer, the music routes, and commands may delete, rename, move, or write files. A command whose path parameter is outside the roots is refused before it runs. It is a list of absolute paths, split by `:` on Linux and macOS and by `;` on Windows. When it is unset, the container image is limited to `/media`, and a source installation has no limit. Reading and listing files are not limited.
 
 `DELETE_MODE` accepts `trash` or `permanent`. The default is `trash`. Permanent deletion cannot be undone by Mux Magic. Windows network paths use permanent deletion when the Recycle Bin is unavailable, even when the global mode is `trash`.
 

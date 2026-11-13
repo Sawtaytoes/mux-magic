@@ -1,6 +1,10 @@
+import { existsSync, realpathSync } from "node:fs"
 import {
+  basename,
   delimiter,
+  dirname,
   isAbsolute,
+  join,
   normalize,
   relative,
   sep,
@@ -172,9 +176,40 @@ export const isPathUnderRoot = ({
   )
 }
 
+// Resolves symbolic links in the part of the path that exists, then
+// adds back the parts that do not exist yet (a rename target, say). A
+// link inside a root that points outside it therefore resolves outside,
+// and the containment check sees where the change would really land.
+export const resolveExistingPath = (
+  path: string,
+): string =>
+  existsSync(path)
+    ? realpathSync(path)
+    : dirname(path) === path
+      ? path
+      : join(
+          resolveExistingPath(dirname(path)),
+          basename(path),
+        )
+
+const isInsideAllowedRoots = ({
+  allowedRoots,
+  path,
+}: {
+  allowedRoots: string[]
+  path: string
+}) =>
+  allowedRoots.some((root) =>
+    isPathUnderRoot({
+      path,
+      root: resolveExistingPath(root),
+    }),
+  )
+
 // validateReadablePath plus a check that the path is inside one of the
-// allowed file roots. Every route that deletes, renames, or moves a file
-// calls this, so a request cannot change files outside the media mounts.
+// allowed file roots, after symbolic links are resolved. Every route
+// that deletes, renames, moves, or writes a file calls this, so a
+// request cannot change files outside the media mounts.
 export const validateWritablePath = (
   path: string,
 ): string => {
@@ -182,9 +217,10 @@ export const validateWritablePath = (
   const allowedRoots = getAllowedFileRoots()
   if (
     allowedRoots !== null &&
-    !allowedRoots.some((root) =>
-      isPathUnderRoot({ path: normalized, root }),
-    )
+    !isInsideAllowedRoots({
+      allowedRoots,
+      path: resolveExistingPath(normalized),
+    })
   ) {
     throw new PathSafetyError(
       `Path is outside the allowed file roots (${allowedRoots.join(", ")}): ${path}`,
@@ -192,3 +228,65 @@ export const validateWritablePath = (
   }
   return normalized
 }
+
+// Command parameters that name a file or folder a command reads from or
+// writes to. `rootPath` is left out on purpose: it is the path a media
+// player sees, written into a JSON file, and it need not exist here.
+const COMMAND_PATH_PARAMETER_NAMES = new Set([
+  "comparisonPath",
+  "copiedDestinationPaths",
+  "destinationFilesPath",
+  "destinationPath",
+  "filePath",
+  "holdingFolderPath",
+  "manifestPath",
+  "outputPath",
+  "parentPath",
+  "pathsToDelete",
+  "sourceFolderPath",
+  "sourcePath",
+  "sourceRootPath",
+  "subtitlesPath",
+])
+
+const toPathValues = (value: unknown) =>
+  (Array.isArray(value) ? value : [value]).filter(
+    (item): item is string =>
+      typeof item === "string" && item.length > 0,
+  )
+
+const describePathProblem = ({
+  name,
+  path,
+}: {
+  name: string
+  path: string
+}) => {
+  try {
+    validateWritablePath(path)
+    return null
+  } catch (error) {
+    return `${name}: ${error instanceof Error ? error.message : String(error)}`
+  }
+}
+
+// Returns one message per command path parameter that falls outside the
+// allowed file roots. Empty when there is no limit (a source install
+// with no ALLOWED_FILE_ROOTS) or when every path is inside. Commands and
+// sequence steps call this before they run, so a command such as
+// deleteFolder or moveFiles cannot touch files outside the roots.
+export const findCommandPathsOutsideAllowedRoots = (
+  params: Record<string, unknown>,
+): string[] =>
+  getAllowedFileRoots() === null
+    ? []
+    : Object.entries(params)
+        .filter(([name]) =>
+          COMMAND_PATH_PARAMETER_NAMES.has(name),
+        )
+        .flatMap(([name, value]) =>
+          toPathValues(value).map((path) =>
+            describePathProblem({ name, path }),
+          ),
+        )
+        .filter((problem) => problem !== null)

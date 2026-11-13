@@ -4,9 +4,10 @@ import type { MiddlewareHandler } from "hono"
 // same front-door server as /api, so its requests are same-origin. Other
 // origins are allowed only when the operator lists them.
 //
-//   - Same host: the Origin's host equals the request's Host header (or
-//     X-Forwarded-Host behind a reverse proxy). The scheme is not
+//   - Same host: the Origin's host equals the request's Host header. The
+//     reverse proxy passes Host through unchanged. The scheme is not
 //     compared, because a proxy that ends TLS forwards plain http.
+//     X-Forwarded-Host is not trusted, because a client can set it.
 //   - PUBLIC_URL: the origin of the app's public URL, when it is set.
 //   - CORS_ALLOWED_ORIGINS: a comma-separated list of extra origins.
 //
@@ -38,11 +39,8 @@ const getConfiguredOrigins = () =>
     .map(toOrigin)
     .filter((origin) => origin !== null)
 
-const getRequestHosts = (headers: Headers) =>
-  [headers.get("host"), headers.get("x-forwarded-host")]
-    .flatMap((value) => (value ?? "").split(","))
-    .map((value) => value.trim().toLowerCase())
-    .filter((value) => value.length > 0)
+const getRequestHost = (headers: Headers) =>
+  (headers.get("host") ?? "").trim().toLowerCase()
 
 const isConfiguredOrigin = (origin: string) =>
   getConfiguredOrigins().some(
@@ -58,9 +56,7 @@ export const isAllowedOrigin = ({
   origin: string
 }) =>
   toHost(origin) !== null &&
-  (getRequestHosts(headers).includes(
-    toHost(origin) ?? "",
-  ) ||
+  (toHost(origin) === getRequestHost(headers) ||
     isConfiguredOrigin(origin))
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
