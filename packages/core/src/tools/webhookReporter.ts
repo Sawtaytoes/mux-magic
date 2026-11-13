@@ -10,6 +10,7 @@ import {
   addJobError,
   type PersistedJobError,
 } from "../api/jobErrorStore.js"
+import { WEBHOOK_TIMEOUT_MS } from "./outboundTimeouts.js"
 
 const postWebhook = async (
   url: string,
@@ -20,6 +21,7 @@ const postWebhook = async (
       body: JSON.stringify(payload),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
     })
 
     if (!response.ok) {

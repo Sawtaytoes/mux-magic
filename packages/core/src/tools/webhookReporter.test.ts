@@ -84,6 +84,24 @@ describe("reportJobStarted", () => {
     ).toBe("application/json")
   })
 
+  test("bounds the POST with a timeout signal", async () => {
+    process.env.WEBHOOK_JOB_STARTED_URL = STARTED_URL
+    const fetchMock = makeFetch()
+    vi.stubGlobal("fetch", fetchMock)
+
+    await reportJobStarted({
+      commandName: "copyFiles",
+      jobId: "abc-123",
+      source: "step",
+    })
+
+    const [, init] = fetchMock.mock.calls[0] as [
+      string,
+      RequestInit,
+    ]
+    expect(init.signal).toBeInstanceOf(AbortSignal)
+  })
+
   test("does not POST when WEBHOOK_JOB_STARTED_URL is unset", async () => {
     const fetchMock = makeFetch()
     vi.stubGlobal("fetch", fetchMock)

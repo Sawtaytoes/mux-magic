@@ -32,6 +32,14 @@ export const runReadlineFfmpeg = ({
       },
     })
 
+    // Without an 'error' listener, a spawn failure (ENOENT when the
+    // binary is missing, EACCES, and so on) becomes an uncaughtException,
+    // and the server's crash handler exits the whole process. Fail only
+    // this observable instead, so one job fails and the rest keep running.
+    childProcess.on("error", (error) => {
+      observer.error(error)
+    })
+
     // This needs to be here, or it won't complete the child process.
     childProcess.stderr.on("data", (_data) => {
       // console.log(data.toString())

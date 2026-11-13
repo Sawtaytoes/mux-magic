@@ -11,6 +11,7 @@ import {
 } from "rxjs"
 import { mediaInfoPath } from "./appPaths.js"
 import type { Iso6391LanguageCode } from "./iso6391LanguageCodes.js"
+import { MEDIA_PROBE_TIMEOUT_MS } from "./outboundTimeouts.js"
 
 const execFile = promisify(execFileCallback)
 
@@ -258,6 +259,10 @@ export const getMediaInfo = (
     const innerSubscription = defer(() =>
       execFile(mediaInfoPath, ["--Output=JSON", filePath], {
         signal: abortController.signal,
+        // A stalled read (a hung network share, for example) would
+        // otherwise hold this probe and its job open forever. Node
+        // kills mediainfo and rejects with `killed: true`.
+        timeout: MEDIA_PROBE_TIMEOUT_MS,
       }),
     )
       .pipe(
@@ -283,7 +288,18 @@ export const getMediaInfo = (
             return throwError(() => error)
           }
 
-          logError(getMediaInfo.name, error)
+          const isTimedOut =
+            (error as Record<string, unknown>).killed ===
+            true
+
+          logError(
+            getMediaInfo.name,
+            isTimedOut
+              ? new Error(
+                  `mediainfo timed out after ${MEDIA_PROBE_TIMEOUT_MS / 1000} seconds: ${filePath}`,
+                )
+              : error,
+          )
           return EMPTY
         }),
       )
