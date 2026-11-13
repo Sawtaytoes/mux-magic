@@ -1,3 +1,8 @@
+import {
+  createWriteGuard,
+  parseHostList,
+  type WriteGuardOptions,
+} from "@charcuterie/server"
 import type { MiddlewareHandler } from "hono"
 
 // Which browser origins may call the API. The web UI is served by the
@@ -12,7 +17,9 @@ import type { MiddlewareHandler } from "hono"
 //   - CORS_ALLOWED_ORIGINS: a comma-separated list of extra origins.
 //
 // A request with no Origin header (curl, Home Assistant, server-side
-// clients) is not a browser cross-origin request, so it is not limited.
+// clients) is not a browser cross-origin request, so the origin rules do
+// not limit it. The write guard below still checks its Host and asks a
+// write for a JSON Content-Type.
 
 const toOrigin = (url: string) => {
   try {
@@ -59,32 +66,34 @@ export const isAllowedOrigin = ({
   (toHost(origin) === getRequestHost(headers) ||
     isConfiguredOrigin(origin))
 
-const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
-
 // CORS response headers only stop a browser from READING a response.
 // A cross-site page can still SEND a simple POST (a form, or a fetch
-// with a text/plain body), and the server would run it. This guard
-// refuses any state-changing request whose Origin is not allowed, so
-// another site cannot start a job or delete a file through the
-// operator's browser.
-export const crossOriginWriteGuard: MiddlewareHandler =
-  async (context, next) => {
-    const origin = context.req.header("origin")
-    if (
-      origin !== undefined &&
-      !SAFE_METHODS.has(context.req.method) &&
-      !isAllowedOrigin({
-        headers: context.req.raw.headers,
-        origin,
-      })
-    ) {
-      return context.json(
-        {
-          error: "cross-origin request refused",
-          details: `Origin ${origin} is not allowed. Add it to CORS_ALLOWED_ORIGINS to allow it.`,
-        },
-        403,
-      )
-    }
-    await next()
-  }
+// with a text/plain body), and a DNS-rebinding page is same-origin with
+// the app. The shared Charcuterie write guard closes both paths:
+//
+//   - Host must be loopback or an ALLOWED_HOSTS entry. With a list, any
+//     other Host gets 421, reads included. With an empty list, reads
+//     pass, and in production (the image sets NODE_ENV=production) a
+//     write from a non-loopback Host gets 421, so a lost setting fails
+//     closed.
+//   - A write's Origin must be the request's own host, PUBLIC_URL's
+//     origin, or a CORS_ALLOWED_ORIGINS entry, and Sec-Fetch-Site must
+//     be same-origin or none.
+//   - A write must send Content-Type: application/json. A bodiless POST
+//     also passes with a same-origin Origin or Sec-Fetch-Site.
+//
+// The options are read on each request, so a test can change the
+// environment between requests.
+export const getWriteGuardOptions =
+  (): WriteGuardOptions => ({
+    allowedHosts: parseHostList(process.env.ALLOWED_HOSTS),
+    allowedOrigins: getConfiguredOrigins(),
+    hostSettingName: "ALLOWED_HOSTS",
+    isEmptyHostListWritable:
+      process.env.NODE_ENV !== "production",
+  })
+
+export const apiWriteGuard: MiddlewareHandler = (
+  context,
+  next,
+) => createWriteGuard(getWriteGuardOptions())(context, next)

@@ -59,7 +59,8 @@ All settings are optional. The complete commented list is in [`.env.example`](..
 | `MAX_TRANSCODE_CONCURRENCY` | `4` | Concurrent audio transcodes for browser playback. |
 | `TRANSCODE_CACHE_MAX_BYTES` | `4294967296` | Maximum temporary transcode cache size in bytes. |
 | `PUBLIC_URL` | unset | Public base URL used in generated API documentation. Its origin may also call the API from a browser. |
-| `CORS_ALLOWED_ORIGINS` | unset | Comma-separated extra browser origins that may call the API. The web interface is same-origin and needs no entry. A browser request that changes state from any other origin is refused with 403. Clients that send no `Origin` header, such as curl, are not affected. |
+| `CORS_ALLOWED_ORIGINS` | unset | Comma-separated extra browser origins that may call the API. The web interface is same-origin and needs no entry. A browser request that changes state from any other origin is refused with 403. Clients that send no `Origin` header, such as curl, are not checked against this list. |
+| `ALLOWED_HOSTS` | unset | Comma-separated host names this server answers to, besides `localhost`: its public name and its LAN address, for example `media.example.com,192.0.2.10:3000`. An entry with a port matches that port only. With a list, a request on any other `Host` gets 421, reads included. **In production (`NODE_ENV=production`, which the container image sets) an empty list refuses every change from a non-loopback host**, so set it before you deploy. A change must send `Content-Type: application/json`; for `curl`, add `-H 'Content-Type: application/json'`, even to a `POST` with no body. |
 
 ### Data and metadata
 
