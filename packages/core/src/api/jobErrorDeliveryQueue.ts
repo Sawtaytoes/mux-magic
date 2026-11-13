@@ -1,3 +1,4 @@
+import { WEBHOOK_TIMEOUT_MS } from "../tools/outboundTimeouts.js"
 import {
   applyDeliveryOutcome,
   classifyResponseStatus,
@@ -63,6 +64,9 @@ const runFetchAttempt = async (
       body: JSON.stringify(buildPayload(record)),
       headers: { "Content-Type": "application/json" },
       method: "POST",
+      // A receiver that never answers counts as a retryable failure
+      // instead of holding this delivery open forever.
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
     })
     const classification = classifyResponseStatus(
       response.status,

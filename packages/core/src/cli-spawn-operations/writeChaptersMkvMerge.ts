@@ -55,6 +55,17 @@ export const writeChaptersMkvMerge = ({
 
     const tty = createTtyAffordances(childProcess)
 
+    // Without an 'error' listener, a spawn failure (ENOENT when the
+    // binary is missing, EACCES, and so on) becomes an uncaughtException,
+    // and the server's crash handler exits the whole process. Fail only
+    // this observable instead, so one job fails and the rest keep running.
+    // 'exit' never fires after a failed spawn, so restore the terminal
+    // here too.
+    childProcess.on("error", (error) => {
+      tty.detach()
+      observer.error(error)
+    })
+
     // mkvmerge emits informational lines on stderr (codec advisories on
     // weird-but-valid containers, warnings); buffer here and surface only
     // on non-zero exit so a benign warning doesn't tear down the job.
@@ -68,18 +79,30 @@ export const writeChaptersMkvMerge = ({
 
     childProcess.on("close", (code) => {
       if (code === null) {
-        unlink(outputFilePath).then(() => {
-          logWarning(
-            "mkvmerge",
-            "Process canceled by user.",
-          )
+        // A cancel can land before the output file exists. Without this
+        // catch, the rejection is unhandled, and the server's crash
+        // handler exits the whole process.
+        unlink(outputFilePath)
+          .catch((error: NodeJS.ErrnoException) => {
+            if (error.code !== "ENOENT") {
+              logWarning(
+                "mkvmerge",
+                `Could not remove partial output ${outputFilePath}: ${error.message}`,
+              )
+            }
+          })
+          .then(() => {
+            logWarning(
+              "mkvmerge",
+              "Process canceled by user.",
+            )
 
-          if (tty.isUsingTtyAffordances) {
-            setTimeout(() => {
-              process.exit()
-            }, 500)
-          }
-        })
+            if (tty.isUsingTtyAffordances) {
+              setTimeout(() => {
+                process.exit()
+              }, 500)
+            }
+          })
       }
     })
 
