@@ -296,6 +296,24 @@ describe("origin policy", () => {
     expect(body.error).toContain("ALLOWED_HOSTS")
   })
 
+  test("with NODE_ENV unset (the production bundle), an empty ALLOWED_HOSTS refuses a rebinding write", async () => {
+    delete process.env.ALLOWED_HOSTS
+    delete process.env.NODE_ENV
+
+    const response = await app.request(
+      "http://rebound.example/templates/missing",
+      {
+        method: "DELETE",
+        headers: {
+          Host: "rebound.example",
+          Origin: "http://rebound.example",
+        },
+      },
+    )
+
+    expect(response.status).toBe(421)
+  })
+
   test("in production, an empty ALLOWED_HOSTS still serves reads and loopback writes", async () => {
     delete process.env.ALLOWED_HOSTS
     process.env.NODE_ENV = "production"

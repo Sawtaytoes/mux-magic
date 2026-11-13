@@ -73,9 +73,11 @@ export const isAllowedOrigin = ({
 //
 //   - Host must be loopback or an ALLOWED_HOSTS entry. With a list, any
 //     other Host gets 421, reads included. With an empty list, reads
-//     pass, and in production (the image sets NODE_ENV=production) a
-//     write from a non-loopback Host gets 421, so a lost setting fails
-//     closed.
+//     pass, and a write from a non-loopback Host gets 421, so a lost
+//     setting fails closed. Only NODE_ENV=development or test may write
+//     with an empty list. An unset NODE_ENV fails closed too, because
+//     the production bundle (packages/server/dist) runs as production
+//     without it (see isBundleDist in packages/server/src/index.ts).
 //   - A write's Origin must be the request's own host, PUBLIC_URL's
 //     origin, or a CORS_ALLOWED_ORIGINS entry, and Sec-Fetch-Site must
 //     be same-origin or none.
@@ -84,13 +86,20 @@ export const isAllowedOrigin = ({
 //
 // The options are read on each request, so a test can change the
 // environment between requests.
+const WRITABLE_WITHOUT_HOST_LIST_ENVS = new Set([
+  "development",
+  "test",
+])
+
 export const getWriteGuardOptions =
   (): WriteGuardOptions => ({
     allowedHosts: parseHostList(process.env.ALLOWED_HOSTS),
     allowedOrigins: getConfiguredOrigins(),
     hostSettingName: "ALLOWED_HOSTS",
     isEmptyHostListWritable:
-      process.env.NODE_ENV !== "production",
+      WRITABLE_WITHOUT_HOST_LIST_ENVS.has(
+        process.env.NODE_ENV ?? "",
+      ),
   })
 
 export const apiWriteGuard: MiddlewareHandler = (
