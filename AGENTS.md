@@ -64,7 +64,8 @@ Plus: function destructuring (2+ args → single object param), always-braced `i
 
 ## Before Every Commit
 
-- `pnpm lint` — auto-fix formatting (biome + eslint); re-stage changed files
+- `pnpm lint` — auto-fix formatting (biome + eslint); re-stage changed files. A lint
+  warning fails it, and CI (`pnpm lint:biome`, `pnpm lint:eslint`), the same as an error
 - `pnpm typecheck` — full monorepo type check
 - `pnpm test` — unit + integration
 
