@@ -1,6 +1,7 @@
 import { constants, type PathLike } from "node:fs"
 // eslint-disable-next-line no-restricted-imports -- this module is the one place core writes media through node:fs/promises; every wrapper below checks its paths first.
 import * as fileSystem from "node:fs/promises"
+import { dirname, extname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 // eslint-disable-next-line no-restricted-imports -- the wrappers below are the only callers of these @mux-magic/tools write helpers in core.
 import * as tools from "@mux-magic/tools"
@@ -259,3 +260,34 @@ export const renameFileOrFolder = (renameRequest: {
     })
     return tools.renameFileOrFolder(renameRequest)
   })
+
+// `FileInfo.renameFile` from @mux-magic/tools renames through its own,
+// unguarded fs calls. Commands call this instead. The new path is built
+// with the same rule the tools helper uses (the new name joined to the
+// file's folder, keeping the old extension), and both paths are checked
+// first. A refusal is logged and the file is skipped, the same way the
+// tools helper handles a failed rename. ESLint refuses a direct
+// `.renameFile(` call in core.
+export const renameListedFile = ({
+  fileInfo,
+  renamedFilename,
+}: {
+  fileInfo: tools.FileInfo
+  renamedFilename: string
+}): ReturnType<tools.FileInfo["renameFile"]> =>
+  defer(() => {
+    assertWritablePaths({
+      isLinkFollowed: false,
+      paths: [
+        fileInfo.fullPath,
+        join(
+          dirname(fileInfo.fullPath),
+          renamedFilename,
+        ).concat(extname(fileInfo.fullPath)),
+      ],
+    })
+    // eslint-disable-next-line no-restricted-syntax -- this is the guarded call that the rule points to.
+    return fileInfo.renameFile(renamedFilename)
+  }).pipe(
+    tools.logAndSwallowPipelineError(renameListedFile),
+  )

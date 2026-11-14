@@ -174,6 +174,17 @@ export default defineConfig(
         "error",
         { paths: CORE_GUARDED_WRITE_RESTRICTIONS },
       ],
+      // FileInfo.renameFile and FolderInfo.renameFolder rename through
+      // @mux-magic/tools' own fs calls, past the root check.
+      "no-restricted-syntax": [
+        "error",
+        {
+          message:
+            "Call renameListedFile from packages/core/src/tools/guardedFileWrites.ts, which checks both paths against the allowed file roots.",
+          selector:
+            "CallExpression[callee.property.name=/^rename(File|Folder)$/]",
+        },
+      ],
     },
   },
   // AGENTS.md convention: one component per file in packages/web.

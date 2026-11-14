@@ -20,6 +20,7 @@ import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
 import { formatTitleWithYear } from "../tools/formatTitleWithYear.js"
 import { getRandomString } from "../tools/getRandomString.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
+import { renameListedFile } from "../tools/guardedFileWrites.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchTvdb } from "../tools/searchTvdb.js"
 import { getTvdbFetchClient } from "../tools/tvdbApi.js"
@@ -370,7 +371,7 @@ export const nameTvShowEpisodes = ({
     mergeAll(),
     withFileProgress(
       ({ fileInfo, renamedFilename }) =>
-        fileInfo.renameFile(renamedFilename),
+        renameListedFile({ fileInfo, renamedFilename }),
       { concurrency: Infinity },
     ),
     logAndRethrowPipelineError(nameTvShowEpisodes),

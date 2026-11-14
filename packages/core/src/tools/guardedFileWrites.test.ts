@@ -1,7 +1,13 @@
 import * as fileSystemSync from "node:fs"
 import { readFile, stat } from "node:fs/promises"
+import { getFilesAtDepth } from "@mux-magic/tools"
 import { vol } from "memfs"
-import { firstValueFrom } from "rxjs"
+import {
+  concatMap,
+  firstValueFrom,
+  lastValueFrom,
+  toArray,
+} from "rxjs"
 import {
   afterEach,
   beforeEach,
@@ -20,6 +26,7 @@ import {
   open,
   rename,
   renameFileOrFolder,
+  renameListedFile,
   rm,
   unlink,
   writeFile,
@@ -499,6 +506,75 @@ describe("with ALLOWED_FILE_ROOTS set, paths a helper computes", () => {
 
     const handle = await open("/outside/secret.txt", "r")
     await handle.close()
+  })
+})
+
+describe("renameListedFile with ALLOWED_FILE_ROOTS set", () => {
+  beforeEach(() => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+    vi.spyOn(console, "error").mockImplementation(() => {})
+    vi.spyOn(console, "info").mockImplementation(() => {})
+  })
+
+  // The walk descends through /media/show/linked-folder into
+  // /outside/folder, so the rename paths are found while it runs.
+  test("skips a file found through a folder link that leaves the root", async () => {
+    const renames = await lastValueFrom(
+      getFilesAtDepth({
+        depth: 2,
+        sourcePath: "/media",
+      }).pipe(
+        concatMap((fileInfo) =>
+          renameListedFile({
+            fileInfo,
+            renamedFilename: "renamed",
+          }),
+        ),
+        toArray(),
+      ),
+    )
+
+    // link.txt is a file link that sits inside the root, so renaming the
+    // link itself is allowed; only kept.srt, reached through the folder
+    // link, is outside.
+    expect(renames).toEqual([
+      {
+        newPath: "/media/show/renamed.mkv",
+        oldPath: "/media/show/episode.mkv",
+      },
+      {
+        newPath: "/media/show/renamed.txt",
+        oldPath: "/media/show/link.txt",
+      },
+    ])
+    await expect(
+      readFile("/outside/folder/kept.srt", "utf8"),
+    ).resolves.toBe("kept")
+    await expect(
+      stat("/outside/folder/renamed.srt"),
+    ).rejects.toThrow()
+  })
+
+  test("skips a new name that leaves the folder for somewhere outside the root", async () => {
+    const renames = await lastValueFrom(
+      getFilesAtDepth({
+        depth: 0,
+        sourcePath: "/media/show",
+      }).pipe(
+        concatMap((fileInfo) =>
+          renameListedFile({
+            fileInfo,
+            renamedFilename: "../../outside/stolen",
+          }),
+        ),
+        toArray(),
+      ),
+    )
+
+    expect(renames).toEqual([])
+    await expect(
+      readFile("/media/show/episode.mkv", "utf8"),
+    ).resolves.toBe("episode")
   })
 })
 

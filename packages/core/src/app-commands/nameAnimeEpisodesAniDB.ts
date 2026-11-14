@@ -21,6 +21,7 @@ import {
 import { detectMovieFormatVariants } from "../tools/detectMovieFormatVariants.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
+import { renameListedFile } from "../tools/guardedFileWrites.js"
 import { matchSpecialsToFiles } from "../tools/matchSpecialsToFiles.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { readMediaDurationMinutes } from "../tools/readMediaDurationMinutes.js"
@@ -610,7 +611,10 @@ export const nameAnimeEpisodesAniDB = ({
     mergeAll(),
     withFileProgress(
       ({ fileInfo, renamedFilename, seriesFolderName }) =>
-        fileInfo.renameFile(renamedFilename).pipe(
+        renameListedFile({
+          fileInfo,
+          renamedFilename,
+        }).pipe(
           map((result) => ({
             ...result,
             seriesFolderName,

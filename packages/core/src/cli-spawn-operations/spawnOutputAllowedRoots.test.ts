@@ -83,6 +83,7 @@ beforeEach(() => {
 // nothing is spawned, nothing is emitted, and the refusal is logged.
 const expectRefusedWithoutSpawn = async (
   observable: Observable<string>,
+  expectedMessage = "outside the allowed file roots",
 ) => {
   const consoleErrorSpy = vi
     .spyOn(console, "error")
@@ -100,10 +101,11 @@ const expectRefusedWithoutSpawn = async (
         part instanceof Error ? part.message : String(part),
       )
       .join(" "),
-  ).toContain("outside the allowed file roots")
+  ).toContain(expectedMessage)
 }
 
 afterEach(() => {
+  vi.restoreAllMocks()
   if (originalAllowedFileRoots === undefined) {
     delete process.env.ALLOWED_FILE_ROOTS
   } else {
@@ -234,6 +236,7 @@ describe("spawn wrappers check the output path before they start the tool", () =
         outputFilePath:
           "/media/alias/../SPLITS/episode.mkv",
       }),
+      "Path traversal is not allowed",
     )
     expect(spawn).not.toHaveBeenCalled()
   })

@@ -35,6 +35,7 @@ import {
   getSpecialFeatureFromTimecode,
   type TimecodeDeviation,
 } from "../tools/getSpecialFeatureFromTimecode.js"
+import { renameListedFile } from "../tools/guardedFileWrites.js"
 import {
   dedupePossibleNames,
   flattenExtrasAsPossibleNames,
@@ -574,20 +575,22 @@ export const nameSpecialFeaturesDvdCompareTmdb = ({
                                           },
                                         )
                                       }
-                                      return fileInfo
-                                        .renameFile(
-                                          resolvedName,
-                                        )
-                                        .pipe(
-                                          map(
-                                            (): NameSpecialFeaturesResult => ({
-                                              oldName:
-                                                fileInfo.filename,
-                                              newName:
-                                                resolvedName,
-                                            }),
-                                          ),
-                                        )
+                                      return renameListedFile(
+                                        {
+                                          fileInfo,
+                                          renamedFilename:
+                                            resolvedName,
+                                        },
+                                      ).pipe(
+                                        map(
+                                          (): NameSpecialFeaturesResult => ({
+                                            oldName:
+                                              fileInfo.filename,
+                                            newName:
+                                              resolvedName,
+                                          }),
+                                        ),
+                                      )
                                     },
                                   ),
                                 ),

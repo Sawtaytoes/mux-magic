@@ -22,6 +22,7 @@ import {
 } from "rxjs"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
 import { getUserSearchInput } from "../tools/getUserSearchInput.js"
+import { renameListedFile } from "../tools/guardedFileWrites.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import { searchMal } from "../tools/searchMal.js"
 import { buildSharedCachedComputation } from "../tools/sharedProviderFetchers.js"
@@ -195,7 +196,7 @@ export const nameAnimeEpisodes = ({
     mergeAll(),
     withFileProgress(
       ({ fileInfo, renamedFilename }) =>
-        fileInfo.renameFile(renamedFilename),
+        renameListedFile({ fileInfo, renamedFilename }),
       { concurrency: Infinity },
     ),
     logAndRethrowPipelineError(nameAnimeEpisodes),
