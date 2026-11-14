@@ -11,9 +11,12 @@ import {
 } from "vitest"
 
 import {
+  aclSafeCopyFile,
+  aclSafeCopyFolder,
   assertWritablePaths,
   makeDirectory,
   mkdir,
+  open,
   rename,
   renameFileOrFolder,
   rm,
@@ -224,6 +227,144 @@ describe("with ALLOWED_FILE_ROOTS set", () => {
     await expect(
       readFile("/media/show/Episode 01.mkv", "utf8"),
     ).resolves.toBe("episode")
+  })
+})
+
+describe("with ALLOWED_FILE_ROOTS set, paths a helper computes", () => {
+  beforeEach(() => {
+    process.env.ALLOWED_FILE_ROOTS = "/media"
+  })
+
+  test("refuses a write through a link whose target does not exist yet", async () => {
+    vol.symlinkSync(
+      "/outside/not-created-yet.txt",
+      "/media/show/dangling.txt",
+    )
+
+    await expect(
+      writeFile("/media/show/dangling.txt", "new"),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+
+    await expect(
+      stat("/outside/not-created-yet.txt"),
+    ).rejects.toThrow()
+  })
+
+  // The system takes `hop/..` as the parent of the link target, not as
+  // /media/show, so a lexical `..` collapse would check the wrong path.
+  test("refuses a `..` that climbs out of a folder link", async () => {
+    vol.mkdirSync("/outside/child", { recursive: true })
+    vol.symlinkSync("/outside/child", "/media/show/hop")
+
+    await expect(
+      writeFile("/media/show/hop/../escaped.txt", "new"),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+    await expect(
+      writeFile("hop/../escaped.txt", "new"),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+    await expect(
+      rename(
+        "/media/show/episode.mkv",
+        "/media/show/hop/../episode.mkv",
+      ),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+    await expect(
+      unlink("/media/show/hop/../secret.txt"),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+
+    await expect(
+      stat("/outside/escaped.txt"),
+    ).rejects.toThrow()
+    await expect(
+      readFile("/outside/secret.txt", "utf8"),
+    ).resolves.toBe("secret")
+  })
+
+  test("accepts a `..` that stays inside the root", () => {
+    vol.mkdirSync("/media/show/extras", { recursive: true })
+
+    expect(() => {
+      assertWritablePaths({
+        isLinkFollowed: true,
+        paths: ["/media/show/extras/../episode.ass"],
+      })
+    }).not.toThrow()
+  })
+
+  test("refuses a copy whose temporary file is a link that leads outside", async () => {
+    vol.fromJSON({ "/media/show/source.txt": "source" })
+    vol.symlinkSync(
+      "/outside/secret.txt",
+      "/media/show/copy.txt.muxmagic.tmp",
+    )
+
+    await expect(
+      aclSafeCopyFile(
+        "/media/show/source.txt",
+        "/media/show/copy.txt",
+      ),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+
+    await expect(
+      readFile("/outside/secret.txt", "utf8"),
+    ).resolves.toBe("secret")
+  })
+
+  test("refuses a folder copy that reaches a link inside the destination", async () => {
+    vol.fromJSON({
+      "/media/source/child/file.txt": "file",
+      "/media/destination/kept.txt": "kept",
+    })
+    vol.symlinkSync(
+      "/outside/folder",
+      "/media/destination/child",
+    )
+
+    await expect(
+      aclSafeCopyFolder(
+        "/media/source",
+        "/media/destination",
+      ),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+
+    await expect(
+      stat("/outside/folder/file.txt"),
+    ).rejects.toThrow()
+  })
+
+  test("still runs a caller's own copy check after the root check", async () => {
+    vol.fromJSON({ "/media/show/source.txt": "source" })
+    const assertWritablePath = vi.fn()
+
+    await aclSafeCopyFile(
+      "/media/show/source.txt",
+      "/media/show/copy.txt",
+      { assertWritablePath },
+    )
+
+    expect(
+      assertWritablePath.mock.calls.map(
+        ([request]) => request,
+      ),
+    ).toEqual([
+      {
+        isLinkFollowed: false,
+        path: "/media/show/copy.txt",
+      },
+      {
+        isLinkFollowed: true,
+        path: "/media/show/copy.txt.muxmagic.tmp",
+      },
+    ])
+  })
+
+  test("refuses a writable open outside the root and allows a read-only one", async () => {
+    await expect(
+      open("/outside/secret.txt", "r+"),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+
+    const handle = await open("/outside/secret.txt", "r")
+    await handle.close()
   })
 })
 

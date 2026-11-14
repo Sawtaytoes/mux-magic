@@ -155,6 +155,67 @@ describe(aclSafeCopyFolder.name, () => {
     )
   })
 
+  test("passes every path it creates or writes to assertWritablePath first", async () => {
+    vol.fromJSON({
+      "/source/child/file.txt": "file",
+    })
+    vol.symlinkSync("/elsewhere", "/source/link")
+    const assertWritablePath = vi.fn()
+
+    await aclSafeCopyFolder("/source", "/destination", {
+      assertWritablePath,
+    })
+
+    expect(
+      assertWritablePath.mock.calls.map(
+        ([request]) => request,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        { isLinkFollowed: false, path: "/destination" },
+        {
+          isLinkFollowed: false,
+          path: "/destination/child",
+        },
+        {
+          isLinkFollowed: false,
+          path: "/destination/child/file.txt",
+        },
+        {
+          isLinkFollowed: true,
+          path: `/destination/child/file.txt${TEMP_SUFFIX}`,
+        },
+        {
+          isLinkFollowed: false,
+          path: "/destination/link",
+        },
+      ]),
+    )
+  })
+
+  test("stops before it touches a path that assertWritablePath refuses", async () => {
+    vol.fromJSON({
+      "/source/child/file.txt": "file",
+    })
+    const refusal = new Error("refused")
+
+    await expect(
+      aclSafeCopyFolder("/source", "/destination", {
+        assertWritablePath: ({ path }) => {
+          if (
+            path.startsWith("/destination/child/file.txt")
+          ) {
+            throw refusal
+          }
+        },
+      }),
+    ).rejects.toBe(refusal)
+
+    expect(
+      vol.existsSync("/destination/child/file.txt"),
+    ).toBe(false)
+  })
+
   test("stops at the next entry once the signal aborts", async () => {
     vol.fromJSON({
       "/src/ep01.mkv": "ep1",

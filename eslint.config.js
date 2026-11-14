@@ -72,6 +72,7 @@ const FILE_SYSTEM_PROMISE_WRITE_NAMES = [
   "cp",
   "link",
   "mkdir",
+  "open",
   "rename",
   "rm",
   "rmdir",

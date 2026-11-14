@@ -1,5 +1,6 @@
-import { type FileHandle, open } from "node:fs/promises"
+import type { FileHandle } from "node:fs/promises"
 import { crc32 } from "node:zlib"
+import { open } from "./guardedFileWrites.js"
 
 const TRACKS_IDENTIFIER = 0x1654ae6b
 const TRACK_ENTRY_IDENTIFIER = 0xae

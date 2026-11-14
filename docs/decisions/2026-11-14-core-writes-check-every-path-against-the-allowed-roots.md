@@ -9,10 +9,12 @@
 
 ## Decision
 
-- Core moves, renames, deletes, and writes media only through `packages/core/src/tools/guardedFileWrites.ts`. It wraps `mkdir`, `rename`, `rm`, `rmdir`, `unlink`, `utimes`, and `writeFile` from `node:fs/promises`, and the `@mux-magic/tools` helpers `aclSafeCopyFile`, `aclSafeCopyFolder`, `makeDirectory`, `renameFileOrFolder`, and `renameOntoDestination`. Each wrapper keeps the signature of the function it wraps and checks every path it changes before anything on disk changes. A rename checks both its source and its destination.
+- Core moves, renames, deletes, and writes media only through `packages/core/src/tools/guardedFileWrites.ts`. It wraps `mkdir`, `open` (a writable open only), `rename`, `rm`, `rmdir`, `unlink`, `utimes`, and `writeFile` from `node:fs/promises`, and the `@mux-magic/tools` helpers `aclSafeCopyFile`, `aclSafeCopyFolder`, `makeDirectory`, `renameFileOrFolder`, and `renameOntoDestination`. Each wrapper keeps the signature of the function it wraps and checks every path it changes before anything on disk changes. A rename checks both its source and its destination.
+- The copy helpers compute paths of their own: the `.muxmagic.tmp` file beside each destination, and every file, folder, and link inside a copied folder. `aclSafeCopyFile` and `aclSafeCopyFolder` in `@mux-magic/tools` take an optional `assertWritablePath` option and call it on each of those paths before they touch it. Core passes the root check through it. The tools package still knows nothing about roots.
 - The check is `assertWritePathInsideAllowedRoots` in `pathSafety.ts`. It uses the same roots as the API: `ALLOWED_FILE_ROOTS` when set, `/media` in the container image, and no limit in a source installation.
+- Links and `..` are resolved the way the operating system walks a path: one segment at a time, following each link as it is reached, with `..` taken as the parent of the folder reached so far. A link whose target does not exist yet is still followed. Lexical normalization would check `/media/hop/..` as `/media` when `hop` links to `/outside/child`, where the system lands in `/outside`. `resolveExistingPath`, which the API's `validateWritablePath` uses, resolves the same way.
 - Writes into a file's content (writing, copying onto, setting times, and the files that ffmpeg, mkvmerge, mkvextract, mkvpropedit, MakeMKV, and taglib write) resolve symbolic links in the whole path, so a link inside a root that points outside is refused. Operations on a directory entry (rename, delete, create a folder) resolve links in the parent folder only, because they change the link, not its target. A delete reached by walking through a linked folder that leads outside is refused.
-- The external tools write their own output, so each spawn wrapper (`runFfmpeg`, `runMkvMerge`, `runMkvExtract`, `runMkvPropEdit`, `writeChaptersMkvMerge`, `runMakeMkvConExtract`) checks its output path before it starts the process. taglib saves are checked before `save()`.
+- The external tools write their own output, so each spawn wrapper (`runFfmpeg`, `runMkvMerge`, `runMkvExtract`, `runMkvPropEdit`, `writeChaptersMkvMerge`, `runMakeMkvConExtract`) checks its output path before it starts the process. With `--split`, `runMkvMerge` also checks every numbered part (`name-001.mkv`) that already exists beside the output, because mkvmerge writes the parts instead of the output path. taglib saves are checked before `save()`.
 - A refusal is a `PathSafetyError`. It fails the write the same way an fs error does: a command that stops on a failed write stops, and a spawn wrapper that logs a failed file and moves on does the same for a refused one.
 - ESLint `no-restricted-imports` blocks those write functions in `packages/core/src` outside `guardedFileWrites.ts`. The app's own state files are listed as exceptions, because they live outside the media roots: the job records (`jobPersistence.ts`, `jobErrorStore.ts`), the anime offline database cache, the transcode temp store, and test fixtures.
 - The parameter check before a command runs stays. It fails a bad parameter before any work starts.
@@ -28,7 +30,14 @@
 - **Checking only the command parameters.** A path a command builds while it runs (the parent folder `flattenOutput` writes into) or finds while it walks a tree (a file under a linked folder) never passes through that check.
 - **Calling `validateWritablePath` at each write site.** Sixty-odd call sites are easy to miss, and a new command would not get the check. The wrappers plus the lint rule make the safe import the only one that passes lint.
 - **Adding the check to `@mux-magic/tools`.** That package is published for other apps and knows nothing about this app's roots.
+- **Normalizing a path with `resolve` or `join` before the link walk.** It collapses `..` before the walk sees where it leads.
+- **Checking only the top-level destination of a copy.** A link already inside the destination folder, or a link at the temporary file path, would be written through.
 - **Resolving links in the whole path for a rename or delete.** It would refuse to rename or delete a link that sits inside a root, though only the link changes.
+
+## Known limits
+
+- The check runs just before each write. A link that another process creates between the check and the write is not caught.
+- A tool that names its own output files (MakeMKV's `title_tNN.mkv`, beyond the expected name) is checked through its output folder and the expected name only.
 
 ## Why
 
@@ -36,4 +45,4 @@ The app deletes and renames media, and some commands compute paths from what the
 
 ## Evidence
 
-- Tests: `guardedFileWrites.test.ts` (no limit without roots, relative paths, writes through a file link, deletes through a folder link, renames across the root, the container default), `flattenOutput.test.ts` (a parent folder outside the root is refused for both copy and move, and the file is kept), `deleteFilesByExtension.test.ts` (a file reached through a folder link that leaves the root is kept), and `spawnOutputAllowedRoots.test.ts` (each spawn wrapper refuses an output outside the roots without spawning).
+- Tests: `guardedFileWrites.test.ts` (no limit without roots, relative paths, writes through a file link, deletes through a folder link, renames across the root, the container default), `flattenOutput.test.ts` (a parent folder outside the root is refused for both copy and move, and the file is kept), `deleteFilesByExtension.test.ts` (a file reached through a folder link that leaves the root is kept), `spawnOutputAllowedRoots.test.ts` (each spawn wrapper refuses an output outside the roots without spawning, and a split refuses an existing part that links outside), and `renumberChapters.test.ts` (the scratch chapter XML in the OS temp folder still works). `guardedFileWrites.test.ts` also covers a link whose target does not exist yet, `..` after a folder link, the copy temporary file, a link inside a copied folder's destination, and a writable `open`.

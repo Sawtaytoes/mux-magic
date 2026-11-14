@@ -1,13 +1,12 @@
-import { existsSync, realpathSync } from "node:fs"
+import { lstatSync, readlinkSync } from "node:fs"
 import {
-  basename,
   delimiter,
   dirname,
   isAbsolute,
   join,
   normalize,
+  parse,
   relative,
-  resolve,
   sep,
   win32,
 } from "node:path"
@@ -177,21 +176,95 @@ export const isPathUnderRoot = ({
   )
 }
 
-// Resolves symbolic links in the part of the path that exists, then
-// adds back the parts that do not exist yet (a rename target, say). A
-// link inside a root that points outside it therefore resolves outside,
-// and the containment check sees where the change would really land.
-export const resolveExistingPath = (
-  path: string,
-): string =>
-  existsSync(path)
-    ? realpathSync(path)
-    : dirname(path) === path
-      ? path
-      : join(
-          resolveExistingPath(dirname(path)),
-          basename(path),
-        )
+// The same limit Linux uses before it reports ELOOP.
+const maximumLinkHops = 40
+
+const getIsSymbolicLink = (path: string) => {
+  try {
+    return lstatSync(path).isSymbolicLink()
+  } catch {
+    return false
+  }
+}
+
+// Resolves the path the way the operating system walks it: one segment
+// at a time, following each symbolic link as it is reached, and taking
+// `..` as the parent of the folder reached so far. Lexical
+// normalization (`resolve`, `join`) would take `/media/hop/..` as
+// `/media` even when `hop` links to `/outside/child`, where the system
+// lands in `/outside`. A link whose target does not exist yet is still
+// followed, so a write through it is checked where it would land.
+// `isLastLinkFollowed: false` leaves a link in the last segment as it
+// is, for operations that change the link itself.
+const resolvePhysicalPath = ({
+  hopCount,
+  isLastLinkFollowed,
+  path,
+}: {
+  hopCount: number
+  isLastLinkFollowed: boolean
+  path: string
+}): string => {
+  const { root } = parse(path)
+  const segments = path
+    .slice(root.length)
+    .split(/[\\/]+/u)
+    .filter(
+      (segment) => segment.length > 0 && segment !== ".",
+    )
+  return segments.reduce(
+    (currentPath, segment, index) =>
+      segment === ".."
+        ? dirname(currentPath)
+        : index === segments.length - 1 &&
+            !isLastLinkFollowed
+          ? join(currentPath, segment)
+          : followSymbolicLink({
+              hopCount,
+              path: join(currentPath, segment),
+            }),
+    root,
+  )
+}
+
+const followSymbolicLink = ({
+  hopCount,
+  path,
+}: {
+  hopCount: number
+  path: string
+}): string => {
+  if (!getIsSymbolicLink(path)) {
+    return path
+  }
+  if (hopCount >= maximumLinkHops) {
+    throw new PathSafetyError(
+      `Too many symbolic links: ${path}`,
+    )
+  }
+  const linkTarget = readlinkSync(path)
+  return resolvePhysicalPath({
+    hopCount: hopCount + 1,
+    isLastLinkFollowed: true,
+    // Concatenated, not joined: join would collapse a `..` in the
+    // target before the walk could see it.
+    path: isAbsolute(linkTarget)
+      ? linkTarget
+      : `${dirname(path)}${sep}${linkTarget}`,
+  })
+}
+
+// Resolves every symbolic link in the path, including one whose target
+// does not exist yet, and keeps the parts that do not exist (a rename
+// target, say). A link inside a root that points outside it therefore
+// resolves outside, and the containment check sees where the change
+// would really land.
+export const resolveExistingPath = (path: string): string =>
+  resolvePhysicalPath({
+    hopCount: 0,
+    isLastLinkFollowed: true,
+    path,
+  })
 
 const isInsideAllowedRoots = ({
   allowedRoots,
@@ -235,7 +308,8 @@ export const validateWritablePath = (
 // paths the command builds or finds while it runs. It checks only the
 // allowed file roots, not the API's absolute-path and traversal rules:
 // a CLI user may pass a relative path, so a relative path is resolved
-// against the working directory first. It does nothing when there is no
+// against the working directory first. Links and `..` are resolved the
+// way the operating system walks them (resolvePhysicalPath). It does nothing when there is no
 // limit (a source install with no ALLOWED_FILE_ROOTS).
 //
 // `isLinkFollowed` says whether the operation acts on what a symbolic
@@ -255,15 +329,15 @@ export const assertWritePathInsideAllowedRoots = ({
   if (allowedRoots === null) {
     return
   }
-  const absolutePath = resolve(getCwd(), path)
-  const resolvedPath = isLinkFollowed
-    ? resolveExistingPath(absolutePath)
-    : dirname(absolutePath) === absolutePath
-      ? absolutePath
-      : join(
-          resolveExistingPath(dirname(absolutePath)),
-          basename(absolutePath),
-        )
+  // Concatenated, not resolved: `resolve` would collapse a `..` before
+  // the walk could see where it really leads.
+  const resolvedPath = resolvePhysicalPath({
+    hopCount: 0,
+    isLastLinkFollowed: isLinkFollowed,
+    path: isAbsolute(path)
+      ? path
+      : `${getCwd()}${sep}${path}`,
+  })
   if (
     !isInsideAllowedRoots({
       allowedRoots,

@@ -42,8 +42,22 @@ export type CopyProgressEvent = {
  * function rejects with an `EEXIST`-shaped error before opening the
  * source. Callers that want mirror-sync / idempotent-re-run behavior
  * must opt in explicitly.
+ *
+ * `assertWritablePath` lets a caller refuse a path before the copy
+ * changes it. It is called with every path the copy creates, writes, or
+ * replaces, including ones the copy computes itself: the temporary file
+ * beside each destination and every file, folder, and link inside a
+ * copied folder. `isLinkFollowed` is true when the write goes through a
+ * symbolic link at that path (writing file content) and false when it
+ * changes the directory entry itself (creating a folder or link, or the
+ * final rename). It throws to refuse; the copy then rejects with that
+ * error before it touches the path.
  */
 export type CopyOptions = {
+  assertWritablePath?: (request: {
+    isLinkFollowed: boolean
+    path: string
+  }) => void
   onProgress?: (event: CopyProgressEvent) => void
   signal?: AbortSignal
   isOverwriteAllowed?: boolean
@@ -237,13 +251,21 @@ export const aclSafeCopyFile = async (
 ): Promise<void> => {
   const isOverwriteAllowed =
     options?.isOverwriteAllowed === true
+  const tempPath = destination.concat(TEMP_SUFFIX)
+  options?.assertWritablePath?.({
+    isLinkFollowed: false,
+    path: destination,
+  })
+  options?.assertWritablePath?.({
+    isLinkFollowed: true,
+    path: tempPath,
+  })
   const hasExistingDestination =
     await ensureDestinationWritable(
       destination,
       isOverwriteAllowed,
     )
 
-  const tempPath = destination.concat(TEMP_SUFFIX)
   const signal = options?.signal
   const onProgress = options?.onProgress
 

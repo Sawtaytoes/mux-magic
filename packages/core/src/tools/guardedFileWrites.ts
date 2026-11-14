@@ -1,4 +1,4 @@
-import type { PathLike } from "node:fs"
+import { constants, type PathLike } from "node:fs"
 // eslint-disable-next-line no-restricted-imports -- this module is the one place core writes media through node:fs/promises; every wrapper below checks its paths first.
 import * as fileSystem from "node:fs/promises"
 import { fileURLToPath } from "node:url"
@@ -91,6 +91,34 @@ export const mkdir = ((
     paths: [path],
   })) as typeof fileSystem.mkdir
 
+const writeOpenFlags =
+  constants.O_WRONLY |
+  constants.O_RDWR |
+  constants.O_CREAT |
+  constants.O_TRUNC |
+  constants.O_APPEND
+
+const getIsReadOnlyOpen = (flags: unknown) =>
+  flags === undefined ||
+  (typeof flags === "string"
+    ? flags === "r" || flags === "rs" || flags === "sr"
+    : typeof flags === "number" &&
+      (flags & writeOpenFlags) === 0)
+
+// A read-only open is not checked; any flag that can write or create is.
+export const open: typeof fileSystem.open = (
+  path,
+  flags,
+  mode,
+) =>
+  getIsReadOnlyOpen(flags)
+    ? fileSystem.open(path, flags, mode)
+    : checkThenRun({
+        action: () => fileSystem.open(path, flags, mode),
+        isLinkFollowed: true,
+        paths: [path],
+      })
+
 export const rename: typeof fileSystem.rename = (
   oldPath,
   newPath,
@@ -145,30 +173,36 @@ export const writeFile: typeof fileSystem.writeFile = (
     paths: [file],
   })
 
+// The copy helpers compute paths of their own: the temporary file
+// beside each destination, and every file, folder, and link inside a
+// copied folder. They call `assertWritablePath` on each one before they
+// touch it, so the check covers those too. A caller's own hook still
+// runs after this one.
+const withRootCheck = (
+  options: tools.CopyOptions | undefined,
+): tools.CopyOptions => ({
+  ...options,
+  assertWritablePath: (request) => {
+    assertWritePathInsideAllowedRoots(request)
+    options?.assertWritablePath?.(request)
+  },
+})
+
 export const aclSafeCopyFile: typeof tools.aclSafeCopyFile =
   (source, destination, options) =>
-    checkThenRun({
-      action: () =>
-        tools.aclSafeCopyFile(source, destination, options),
-      isLinkFollowed: true,
-      paths: [destination],
-    })
+    tools.aclSafeCopyFile(
+      source,
+      destination,
+      withRootCheck(options),
+    )
 
-// The check covers the destination folder. A file the copy creates
-// inside it lands under that folder, so it stays inside the same root
-// unless the destination already holds a symbolic link to elsewhere.
 export const aclSafeCopyFolder: typeof tools.aclSafeCopyFolder =
   (source, destination, options) =>
-    checkThenRun({
-      action: () =>
-        tools.aclSafeCopyFolder(
-          source,
-          destination,
-          options,
-        ),
-      isLinkFollowed: true,
-      paths: [destination],
-    })
+    tools.aclSafeCopyFolder(
+      source,
+      destination,
+      withRootCheck(options),
+    )
 
 export const renameOntoDestination: typeof tools.renameOntoDestination =
   (renameRequest) =>

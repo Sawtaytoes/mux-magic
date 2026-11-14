@@ -132,6 +132,26 @@ describe("spawn wrappers check the output path before they start the tool", () =
     subscription.unsubscribe()
   })
 
+  test("runMkvMerge refuses a split when an existing part is a link that leads outside", async () => {
+    vol.fromJSON({ "/outside/kept.mkv": "kept" })
+    vol.mkdirSync("/media/show/SPLITS", { recursive: true })
+    vol.symlinkSync(
+      "/outside/kept.mkv",
+      "/media/show/SPLITS/episode-001.mkv",
+    )
+
+    await expectRefusedWithoutSpawn(
+      runMkvMerge({
+        args: [
+          "--split",
+          "chapters:3",
+          "/media/show/episode.mkv",
+        ],
+        outputFilePath: "/media/show/SPLITS/episode.mkv",
+      }),
+    )
+  })
+
   test("runMkvExtract refuses when any output is outside the allowed roots", async () => {
     await expectRefusedWithoutSpawn(
       runMkvExtract({
