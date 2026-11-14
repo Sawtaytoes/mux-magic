@@ -280,6 +280,64 @@ describe("with ALLOWED_FILE_ROOTS set, paths a helper computes", () => {
     ).resolves.toBe("secret")
   })
 
+  // On Linux a backslash is part of a file name, not a separator.
+  test("refuses a write through a link whose name holds a backslash", async () => {
+    vol.symlinkSync("/outside/folder", "/media/show/a\\b")
+
+    await expect(
+      writeFile("/media/show/a\\b/escaped.txt", "new"),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+    await expect(
+      unlink("/media/show/a\\b/kept.srt"),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+
+    await expect(
+      stat("/outside/folder/escaped.txt"),
+    ).rejects.toThrow()
+    await expect(
+      readFile("/outside/folder/kept.srt", "utf8"),
+    ).resolves.toBe("kept")
+  })
+
+  // A trailing separator makes the system follow the link to its folder.
+  test("refuses a delete of a folder link written with a trailing separator", async () => {
+    await expect(
+      rm("/media/show/linked-folder/", { recursive: true }),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+    await expect(
+      rm("/media/show/linked-folder/.", {
+        recursive: true,
+      }),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+
+    await expect(
+      readFile("/outside/folder/kept.srt", "utf8"),
+    ).resolves.toBe("kept")
+  })
+
+  // Each link here expands into two copies of the one before it, so a
+  // limit counted per segment would allow exponential work. The limit
+  // counts every link followed in the whole path.
+  test("stops a path whose links expand into each other", () => {
+    vol.symlinkSync(".", "/media/show/link0")
+    Array.from(
+      { length: 15 },
+      (_, index) => index + 1,
+    ).forEach((linkNumber) => {
+      vol.symlinkSync(
+        `link${linkNumber - 1}/link${linkNumber - 1}`,
+        `/media/show/link${linkNumber}`,
+      )
+    })
+
+    expect(() => {
+      assertWritablePaths({
+        isLinkFollowed: true,
+        paths: ["/media/show/link15/episode.ass"],
+      })
+    }).toThrow(/Too many symbolic links/u)
+  })
+
   test("accepts a `..` that stays inside the root", () => {
     vol.mkdirSync("/media/show/extras", { recursive: true })
 

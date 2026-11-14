@@ -196,7 +196,20 @@ const getIsSymbolicLink = (path: string) => {
 // followed, so a write through it is checked where it would land.
 // `isLastLinkFollowed: false` leaves a link in the last segment as it
 // is, for operations that change the link itself.
-const resolvePhysicalPath = ({
+// Only the host's own separator splits a path: on Linux a backslash is
+// an ordinary character in a file name, so `/media/a\b` is one entry.
+const separatorPattern = sep === "\\" ? /[\\/]+/u : /\/+/u
+
+type PhysicalWalk = {
+  hopCount: number
+  path: string
+}
+
+// `hopCount` is carried through the whole walk, so every link followed
+// anywhere in the path counts against one limit, as on Linux. A budget
+// per segment would let a small set of links that expand into each
+// other cost exponential work.
+const walkPhysicalPath = ({
   hopCount,
   isLastLinkFollowed,
   path,
@@ -204,38 +217,48 @@ const resolvePhysicalPath = ({
   hopCount: number
   isLastLinkFollowed: boolean
   path: string
-}): string => {
+}): PhysicalWalk => {
   const { root } = parse(path)
-  const segments = path
+  const rawSegments = path
     .slice(root.length)
-    .split(/[\\/]+/u)
-    .filter(
-      (segment) => segment.length > 0 && segment !== ".",
-    )
-  return segments.reduce(
-    (currentPath, segment, index) =>
+    .split(separatorPattern)
+  const lastRawSegment = rawSegments.at(-1)
+  // A trailing separator or `.` makes the system resolve the last
+  // entry as a folder, which follows a link there.
+  const isFinalLinkFollowed =
+    isLastLinkFollowed ||
+    lastRawSegment === "" ||
+    lastRawSegment === "."
+  const segments = rawSegments.filter(
+    (segment) => segment.length > 0 && segment !== ".",
+  )
+  return segments.reduce<PhysicalWalk>(
+    (walk, segment, index) =>
       segment === ".."
-        ? dirname(currentPath)
+        ? {
+            hopCount: walk.hopCount,
+            path: dirname(walk.path),
+          }
         : index === segments.length - 1 &&
-            !isLastLinkFollowed
-          ? join(currentPath, segment)
+            !isFinalLinkFollowed
+          ? {
+              hopCount: walk.hopCount,
+              path: join(walk.path, segment),
+            }
           : followSymbolicLink({
-              hopCount,
-              path: join(currentPath, segment),
+              hopCount: walk.hopCount,
+              path: join(walk.path, segment),
             }),
-    root,
+    { hopCount, path: root },
   )
 }
 
 const followSymbolicLink = ({
   hopCount,
   path,
-}: {
-  hopCount: number
-  path: string
-}): string => {
+}: PhysicalWalk): PhysicalWalk => {
   if (!getIsSymbolicLink(path)) {
-    return path
+    return { hopCount, path }
   }
   if (hopCount >= maximumLinkHops) {
     throw new PathSafetyError(
@@ -243,7 +266,7 @@ const followSymbolicLink = ({
     )
   }
   const linkTarget = readlinkSync(path)
-  return resolvePhysicalPath({
+  return walkPhysicalPath({
     hopCount: hopCount + 1,
     isLastLinkFollowed: true,
     // Concatenated, not joined: join would collapse a `..` in the
@@ -254,6 +277,19 @@ const followSymbolicLink = ({
   })
 }
 
+const resolvePhysicalPath = ({
+  isLastLinkFollowed,
+  path,
+}: {
+  isLastLinkFollowed: boolean
+  path: string
+}): string =>
+  walkPhysicalPath({
+    hopCount: 0,
+    isLastLinkFollowed,
+    path,
+  }).path
+
 // Resolves every symbolic link in the path, including one whose target
 // does not exist yet, and keeps the parts that do not exist (a rename
 // target, say). A link inside a root that points outside it therefore
@@ -261,7 +297,6 @@ const followSymbolicLink = ({
 // would really land.
 export const resolveExistingPath = (path: string): string =>
   resolvePhysicalPath({
-    hopCount: 0,
     isLastLinkFollowed: true,
     path,
   })
@@ -331,8 +366,15 @@ export const assertWritePathInsideAllowedRoots = ({
   }
   // Concatenated, not resolved: `resolve` would collapse a `..` before
   // the walk could see where it really leads.
+  // A Windows drive-relative path (`C:file`, `C:..\file`) resolves
+  // against that drive's own working directory, which this process
+  // cannot see, so it is refused rather than guessed at.
+  if (!isAbsolute(path) && parse(path).root !== "") {
+    throw new PathSafetyError(
+      `Drive-relative paths are not allowed when file roots are set. Use a fully qualified path: ${path}`,
+    )
+  }
   const resolvedPath = resolvePhysicalPath({
-    hopCount: 0,
     isLastLinkFollowed: isLinkFollowed,
     path: isAbsolute(path)
       ? path
