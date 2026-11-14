@@ -21,6 +21,10 @@
 - ESLint `no-restricted-imports` blocks those write functions in `packages/core/src` outside `guardedFileWrites.ts`. The app's own state files are listed as exceptions, because they live outside the media roots: the job records (`jobPersistence.ts`, `jobErrorStore.ts`), the anime offline database cache, the transcode temp store, and test fixtures.
 - The parameter check before a command runs stays. It fails a bad parameter before any work starts.
 
+## Context
+
+The 2026-11-13 decision checked the path parameters of every command and sequence step before it ran, and said in so many words that this was not a sandbox. A path a command built or found while it ran was not checked again: `flattenOutput` writes into the parent of `sourcePath`, and a walk that descends through a linked folder finds files outside the root. The audit follow-up (Docket `task_n8o3o5dgmweqmrhg`) asked for the check at the point where core writes. Seven rounds of independent review on PR #338 found further routes that a wrapper on `node:fs/promises` alone did not cover (copy helpers, link resolution, spawned tools, rename callbacks); each is handled below.
+
 ## What changes for the CLI
 
 - A source installation with no `ALLOWED_FILE_ROOTS` has no limit, so the CLI on a desktop behaves as before.
