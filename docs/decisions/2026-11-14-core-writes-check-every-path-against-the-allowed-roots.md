@@ -23,7 +23,7 @@
 
 ## Context
 
-The 2026-11-13 decision checked the path parameters of every command and sequence step before it ran, and said in so many words that this was not a sandbox. A path a command built or found while it ran was not checked again: `flattenOutput` writes into the parent of `sourcePath`, and a walk that descends through a linked folder finds files outside the root. The audit follow-up (Docket `task_n8o3o5dgmweqmrhg`) asked for the check at the point where core writes. Seven rounds of independent review on PR #338 found further routes that a wrapper on `node:fs/promises` alone did not cover (copy helpers, link resolution, spawned tools, rename callbacks); each is handled below.
+The 2026-11-13 decision checked the path parameters of every command and sequence step before it ran, and stated that this was not a sandbox. A path a command built or found while it ran was not checked again: `flattenOutput` writes into the parent of `sourcePath`, and a walk that descends through a linked folder finds files outside the root. The audit follow-up (Docket `task_n8o3o5dgmweqmrhg`) asked for the check at the point where core writes. Seven rounds of independent review on PR #338 found further routes that a wrapper on `node:fs/promises` alone did not cover (copy helpers, link resolution, spawned tools, rename callbacks); each is handled below.
 
 ## What changes for the CLI
 
