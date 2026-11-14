@@ -1,8 +1,4 @@
-import {
-  readFile,
-  unlink,
-  writeFile,
-} from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 
 import { logInfo } from "@mux-magic/tools"
@@ -16,6 +12,7 @@ import {
 import { runMkvPropEdit } from "../../cli-spawn-operations/runMkvPropEdit.js"
 import { buildSimpleChapters } from "../bluray/buildSimpleChapters.js"
 import { parseMpls } from "../bluray/parseMpls.js"
+import { unlink, writeFile } from "../guardedFileWrites.js"
 
 /** Where a `[BACKUP]` folder keeps its playlists. */
 const playlistFolderPath = join("BDMV", "PLAYLIST")

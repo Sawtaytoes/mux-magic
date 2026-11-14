@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process"
-import { unlink } from "node:fs/promises"
 import { extname } from "node:path"
 import {
   logAndSwallowPipelineError,
@@ -19,6 +18,10 @@ import { getActiveJobId } from "../api/logCapture.js"
 import { ffmpegPath as defaultFfmpegPath } from "../tools/appPaths.js"
 import { getFileDuration } from "../tools/getFileDuration.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
+import {
+  assertWritablePaths,
+  unlink,
+} from "../tools/guardedFileWrites.js"
 import { convertTimecodeToMilliseconds } from "../tools/parseTimestamps.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
@@ -84,6 +87,12 @@ export const runFfmpeg = ({
     concatMap(
       (duration) =>
         new Observable<string>((observer) => {
+          // The tool writes this output itself, outside core's guarded fs
+          // wrappers, so its path is checked here before the spawn.
+          assertWritablePaths({
+            isLinkFollowed: true,
+            paths: [outputFilePath],
+          })
           // In API/job context the server runs as a long-lived daemon; the CLI
           // affordances below (stdin raw mode, cli-progress bar drawing, and
           // process.exit on cancel) all break that environment — they leak

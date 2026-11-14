@@ -4,7 +4,6 @@ import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
   logInfo,
-  makeDirectory,
 } from "@mux-magic/tools"
 import {
   concatMap,
@@ -21,6 +20,7 @@ import {
 } from "../cli-spawn-operations/keepSpecifiedLanguageTracks.js"
 import { filterIsVideoFile } from "../tools/filterIsVideoFile.js"
 import { getTrackLanguages } from "../tools/getTrackLanguages.js"
+import { makeDirectory } from "../tools/guardedFileWrites.js"
 import type { Iso6392LanguageCode } from "../tools/iso6392LanguageCodes.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 

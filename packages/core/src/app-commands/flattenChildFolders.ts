@@ -5,7 +5,6 @@ import {
   getFolder,
   logAndRethrowPipelineError,
   logInfo,
-  renameFileOrFolder,
 } from "@mux-magic/tools"
 import {
   concatMap,
@@ -16,6 +15,7 @@ import {
   tap,
   toArray,
 } from "rxjs"
+import { renameFileOrFolder } from "../tools/guardedFileWrites.js"
 import { removeEmptyFolder } from "../tools/removeEmptyFolder.js"
 
 type FlattenRecord = {

@@ -1,11 +1,14 @@
-import { stat, utimes } from "node:fs/promises"
+import { stat } from "node:fs/promises"
 import {
   ByteVector,
   File,
   Picture,
   PictureType,
 } from "node-taglib-sharp"
-
+import {
+  assertWritablePaths,
+  utimes,
+} from "../../tools/guardedFileWrites.js"
 import type { CoverArtImage } from "./coverArtImage.js"
 
 export const COVER_ART_DESCRIPTION = "Cover (front)"
@@ -96,6 +99,12 @@ const savePictureToAudioFile = ({
       audioFile.tag.pictures = [
         buildFrontCoverPicture({ imageBytes, mimeType }),
       ]
+      // taglib writes the file itself, outside core's guarded fs
+      // wrappers, so the path is checked before the save.
+      assertWritablePaths({
+        isLinkFollowed: true,
+        paths: [filePath],
+      })
       audioFile.save()
     },
   })

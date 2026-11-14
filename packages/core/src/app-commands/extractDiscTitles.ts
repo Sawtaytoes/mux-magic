@@ -1,4 +1,4 @@
-import { mkdir, stat } from "node:fs/promises"
+import { stat } from "node:fs/promises"
 import { basename, join } from "node:path"
 
 import {
@@ -23,6 +23,7 @@ import { buildDiscAnalysis } from "../tools/discTitles/buildDiscAnalysis.js"
 import { buildTrackSupersetPlans } from "../tools/discTitles/buildTrackSupersetPlans.js"
 import type { AnalysedTitle } from "../tools/discTitles/discTitleAnalysis.js"
 import { graftPlaylistChapters } from "../tools/discTitles/graftPlaylistChapters.js"
+import { mkdir } from "../tools/guardedFileWrites.js"
 
 /**
  * Where the ripped titles land.

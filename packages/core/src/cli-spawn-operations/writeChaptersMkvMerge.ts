@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process"
-import { unlink } from "node:fs/promises"
 import {
   logAndSwallowPipelineError,
   logInfo,
@@ -9,6 +8,10 @@ import { Observable } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
 import { mkvMergePath } from "../tools/appPaths.js"
 import { createTtyAffordances } from "../tools/createTtyAffordances.js"
+import {
+  assertWritablePaths,
+  unlink,
+} from "../tools/guardedFileWrites.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
@@ -28,6 +31,12 @@ export const writeChaptersMkvMerge = ({
   outputFilePath: string
 }): Observable<string> =>
   new Observable<string>((observer) => {
+    // The tool writes this output itself, outside core's guarded fs
+    // wrappers, so its path is checked here before the spawn.
+    assertWritablePaths({
+      isLinkFollowed: true,
+      paths: [outputFilePath],
+    })
     const jobId = getActiveJobId()
     const emitter =
       jobId !== undefined

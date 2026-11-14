@@ -1,10 +1,9 @@
-import { readdir, rename, stat } from "node:fs/promises"
+import { readdir, stat } from "node:fs/promises"
 import { dirname, join } from "node:path"
 
 import {
   logAndRethrowPipelineError,
   logInfo,
-  makeDirectory,
 } from "@mux-magic/tools"
 import { concatMap, defer, from, map, tap } from "rxjs"
 
@@ -14,6 +13,10 @@ import {
 } from "../cli-spawn-operations/trimTailMkvMerge.js"
 import { getMkvInfo } from "../tools/getMkvInfo.js"
 import { getSplitOutputFilePaths } from "../tools/getSplitOutputFilePaths.js"
+import {
+  makeDirectory,
+  rename,
+} from "../tools/guardedFileWrites.js"
 
 type TrimFileTailRequiredProps = {
   endTime: string

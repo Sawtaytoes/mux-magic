@@ -1,9 +1,7 @@
 import { dirname } from "node:path"
-import {
-  addFolderNameBeforeFilename,
-  makeDirectory,
-} from "@mux-magic/tools"
+import { addFolderNameBeforeFilename } from "@mux-magic/tools"
 import { concatMap, map, of } from "rxjs"
+import { makeDirectory } from "../tools/guardedFileWrites.js"
 import { REORDERED_TRACKS_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { runFfmpeg } from "./runFfmpeg.js"
 

@@ -1,4 +1,4 @@
-import { readdir, rename, stat } from "node:fs/promises"
+import { readdir, stat } from "node:fs/promises"
 import { basename, dirname, join } from "node:path"
 
 import {
@@ -15,7 +15,7 @@ import {
   of,
   toArray,
 } from "rxjs"
-
+import { rename } from "../tools/guardedFileWrites.js"
 import {
   compileFilterRegex,
   type RegexFilterInput,

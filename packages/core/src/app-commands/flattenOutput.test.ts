@@ -2,7 +2,15 @@ import { readFile, stat } from "node:fs/promises"
 import { captureLogMessage } from "@mux-magic/tools/test-helpers"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
-import { beforeEach, describe, expect, test } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "vitest"
+
+import { PathSafetyError } from "../tools/pathSafety.js"
 
 import { flattenOutput } from "./flattenOutput.js"
 
@@ -163,5 +171,58 @@ describe(flattenOutput.name, () => {
     await expect(
       readFile("/work/episode-01.mkv", "utf8"),
     ).resolves.toBe("merged-1")
+  })
+
+  describe("with ALLOWED_FILE_ROOTS set", () => {
+    const originalAllowedFileRoots =
+      process.env.ALLOWED_FILE_ROOTS
+
+    beforeEach(() => {
+      process.env.ALLOWED_FILE_ROOTS = "/media/library"
+      vol.fromJSON({
+        "/media/library/episode-01.mkv": "episode-1",
+      })
+    })
+
+    afterEach(() => {
+      if (originalAllowedFileRoots === undefined) {
+        delete process.env.ALLOWED_FILE_ROOTS
+      } else {
+        process.env.ALLOWED_FILE_ROOTS =
+          originalAllowedFileRoots
+      }
+    })
+
+    // The parent folder is computed from sourcePath while the command
+    // runs, so the parameter check alone never sees it.
+    test("refuses to copy into a parent folder outside the root", async () => {
+      await expect(
+        firstValueFrom(
+          flattenOutput({ sourcePath: "/media/library" }),
+        ),
+      ).rejects.toBeInstanceOf(PathSafetyError)
+
+      await expect(
+        stat("/media/episode-01.mkv"),
+      ).rejects.toThrow()
+    })
+
+    test("refuses to move into a parent folder outside the root and keeps the file", async () => {
+      await expect(
+        firstValueFrom(
+          flattenOutput({
+            isDeletingSourceFolder: true,
+            sourcePath: "/media/library",
+          }),
+        ),
+      ).rejects.toBeInstanceOf(PathSafetyError)
+
+      await expect(
+        readFile("/media/library/episode-01.mkv", "utf8"),
+      ).resolves.toBe("episode-1")
+      await expect(
+        stat("/media/episode-01.mkv"),
+      ).rejects.toThrow()
+    })
   })
 })

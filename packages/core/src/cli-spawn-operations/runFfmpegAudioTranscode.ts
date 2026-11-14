@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process"
+// eslint-disable-next-line no-restricted-imports -- the stream writes into the transcode temp store under os.tmpdir(), the app's own cache, not a media path.
 import { createWriteStream } from "node:fs"
 import { tmpdir } from "node:os"
 import { logWarning } from "@mux-magic/tools"

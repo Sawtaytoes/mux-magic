@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 import { extname } from "node:path"
 import {
   getFilesAtDepth,
@@ -31,6 +31,7 @@ import type {
   NamedPredicates,
 } from "../tools/assTypes.js"
 import { buildDefaultSubtitleModificationRules } from "../tools/buildDefaultSubtitleModificationRules.js"
+import { writeFile } from "../tools/guardedFileWrites.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 type ModifySubtitleMetadataRequiredProps = {

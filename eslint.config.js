@@ -57,6 +57,64 @@ const WEB_API_SHAPE_RULES = [
   },
 ]
 
+// Core moves, renames, deletes, and writes media only through
+// packages/core/src/tools/guardedFileWrites.ts, which checks every path
+// against the allowed file roots, including paths a command builds while
+// it runs. This rule keeps a new command from writing past that check.
+// The app's own state files (job records, caches, the transcode temp
+// store) live outside the media roots, so they are listed in `ignores`.
+// See docs/decisions/2026-11-14-core-writes-check-every-path-against-the-allowed-roots.md.
+const GUARDED_WRITE_MESSAGE =
+  "Import this write from packages/core/src/tools/guardedFileWrites.ts, which checks the path against the allowed file roots."
+const FILE_SYSTEM_PROMISE_WRITE_NAMES = [
+  "appendFile",
+  "copyFile",
+  "cp",
+  "link",
+  "mkdir",
+  "rename",
+  "rm",
+  "rmdir",
+  "symlink",
+  "truncate",
+  "unlink",
+  "utimes",
+  "writeFile",
+]
+const FILE_SYSTEM_SYNC_WRITE_NAMES =
+  FILE_SYSTEM_PROMISE_WRITE_NAMES.map(
+    (name) => `${name}Sync`,
+  ).concat(["createWriteStream"])
+const TOOLS_WRITE_NAMES = [
+  "aclSafeCopyFile",
+  "aclSafeCopyFolder",
+  "createRenameFileOrFolderObservable",
+  "makeDirectory",
+  "renameFileOrFolder",
+  "renameOntoDestination",
+]
+const CORE_GUARDED_WRITE_RESTRICTIONS = [
+  ["node:fs/promises", FILE_SYSTEM_PROMISE_WRITE_NAMES],
+  ["fs/promises", FILE_SYSTEM_PROMISE_WRITE_NAMES],
+  [
+    "node:fs",
+    FILE_SYSTEM_SYNC_WRITE_NAMES.concat(
+      FILE_SYSTEM_PROMISE_WRITE_NAMES,
+    ),
+  ],
+  [
+    "fs",
+    FILE_SYSTEM_SYNC_WRITE_NAMES.concat(
+      FILE_SYSTEM_PROMISE_WRITE_NAMES,
+    ),
+  ],
+  ["@mux-magic/tools", TOOLS_WRITE_NAMES],
+].map(([name, importNames]) => ({
+  importNames,
+  message: GUARDED_WRITE_MESSAGE,
+  name,
+}))
+
 export default defineConfig(
   {
     ignores: [
@@ -96,6 +154,24 @@ export default defineConfig(
         "error",
         ...WEB_API_SHAPE_RULES,
         ...PHYSICAL_DIRECTION_SELECTORS,
+      ],
+    },
+  },
+  {
+    files: ["packages/core/src/**/*.ts"],
+    ignores: [
+      "**/*.test.ts",
+      "**/__fixtures__/**",
+      "packages/core/src/api/jobErrorStore.ts",
+      "packages/core/src/api/jobPersistence.ts",
+      "packages/core/src/music/fixtures/**",
+      "packages/core/src/tools/animeOfflineDatabase.ts",
+      "packages/core/src/tools/transcodeTempStore.ts",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { paths: CORE_GUARDED_WRITE_RESTRICTIONS },
       ],
     },
   },

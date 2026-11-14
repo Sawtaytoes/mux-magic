@@ -1,5 +1,4 @@
-import { rm } from "node:fs/promises"
-
+import { rm } from "./guardedFileWrites.js"
 import { isNetworkPath } from "./isNetworkPath.js"
 import {
   PathSafetyError,

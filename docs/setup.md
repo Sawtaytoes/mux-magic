@@ -74,7 +74,7 @@ All settings are optional. The complete commented list is in [`.env.example`](..
 
 ### File deletion
 
-`ALLOWED_FILE_ROOTS` limits where the file explorer and the music routes may delete, rename, move, or write files. Commands and sequence steps are refused when a path parameter is outside the roots, but this checks the parameters only: a path a command builds or finds later, such as the parent folder that `flattenOutput` writes into or a linked folder found while walking a tree, is not checked again. It is a list of absolute paths, split by `:` on Linux and macOS and by `;` on Windows. When it is unset, the container image is limited to `/media`, and a source installation has no limit. Reading and listing files are not limited.
+`ALLOWED_FILE_ROOTS` limits where Mux Magic may delete, rename, move, or write files: the file explorer, the music routes, and every command, from the API or the CLI. A command is refused before it starts when a path parameter is outside the roots. Every path a command builds or finds while it runs is checked again when it writes, so the parent folder that `flattenOutput` writes into and a file under a linked folder that leads outside are refused too. A relative CLI path is resolved against the working directory first. It is a list of absolute paths, split by `:` on Linux and macOS and by `;` on Windows. When it is unset, the container image is limited to `/media`, and a source installation has no limit. Reading and listing files are not limited.
 
 `DELETE_MODE` accepts `trash` or `permanent`. The default is `trash`. Permanent deletion cannot be undone by Mux Magic. Windows network paths use permanent deletion when the Recycle Bin is unavailable, even when the global mode is `trash`.
 

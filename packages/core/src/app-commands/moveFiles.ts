@@ -6,7 +6,6 @@ import {
   getFiles,
   logAndRethrowPipelineError,
   logInfo,
-  makeDirectory,
   type RenameRegex,
   runTasks,
 } from "@mux-magic/tools"
@@ -21,6 +20,7 @@ import {
   toArray,
 } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
+import { makeDirectory } from "../tools/guardedFileWrites.js"
 import { moveSingleFile } from "../tools/moveSingleFile.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import {

@@ -1,4 +1,4 @@
-import { stat } from "node:fs/promises"
+import { readFile, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { vol } from "memfs"
@@ -9,6 +9,7 @@ import {
   toArray,
 } from "rxjs"
 import {
+  afterEach,
   beforeEach,
   describe,
   expect,
@@ -350,5 +351,54 @@ describe("renumberChapters", () => {
         "renumbered",
     )
     expect(renumberedActions.length).toBe(1)
+  })
+
+  describe("with ALLOWED_FILE_ROOTS set", () => {
+    const originalAllowedFileRoots =
+      process.env.ALLOWED_FILE_ROOTS
+
+    beforeEach(() => {
+      process.env.ALLOWED_FILE_ROOTS = "/work"
+    })
+
+    afterEach(() => {
+      if (originalAllowedFileRoots === undefined) {
+        delete process.env.ALLOWED_FILE_ROOTS
+      } else {
+        process.env.ALLOWED_FILE_ROOTS =
+          originalAllowedFileRoots
+      }
+    })
+
+    // The chapter XML is a scratch file under os.tmpdir(), outside the
+    // root. Only the media file is checked, so the renumber still runs.
+    test("renumbers a file inside the root while its scratch XML lives in the OS temp folder", async () => {
+      vol.fromJSON({
+        "/work/episode.mkv": "source-mkv-bytes",
+      })
+      vi.mocked(runMkvExtractStdOut).mockReturnValue(
+        of(buildChaptersXml(["Chapter 08", "Chapter 09"])),
+      )
+      stubWriteChaptersMkvMergeWritingFile()
+
+      const emissions = await firstValueFrom(
+        renumberChapters({
+          isPaddingChapterNumbers: true,
+          isRecursive: false,
+          sourcePath: "/work",
+        }).pipe(toArray()),
+      )
+
+      expect(emissions).toEqual([
+        {
+          action: "renumbered",
+          filePath: join("/work", "episode.mkv"),
+          renamedCount: 2,
+        },
+      ])
+      await expect(
+        readFile("/work/episode.mkv", "utf8"),
+      ).resolves.toBe("rewritten-mkv")
+    })
   })
 })

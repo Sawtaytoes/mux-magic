@@ -7,6 +7,7 @@ import {
 import { Observable } from "rxjs"
 import { mkvPropEditPath } from "../tools/appPaths.js"
 import { createTtyAffordances } from "../tools/createTtyAffordances.js"
+import { assertWritablePaths } from "../tools/guardedFileWrites.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
 export const runMkvPropEdit = ({
@@ -17,6 +18,12 @@ export const runMkvPropEdit = ({
   filePath: string
 }): Observable<string> =>
   new Observable<string>((observer) => {
+    // The tool writes this output itself, outside core's guarded fs
+    // wrappers, so its path is checked here before the spawn.
+    assertWritablePaths({
+      isLinkFollowed: true,
+      paths: [filePath],
+    })
     const commandArgs = [filePath, ...args]
 
     logInfo(

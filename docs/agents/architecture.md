@@ -48,7 +48,7 @@ and calls `serve()`.
 
 A command needs to land on **five** surfaces or it won't be fully usable. Missing any one of them silently drops a different mode of access — a route-only command isn't callable from the builder; a builder-only command isn't callable from the CLI. Touch every one in the same PR.
 
-1. **App-command (Observable)** — `packages/core/src/app-commands/<commandName>.ts` (+ `.test.ts`). Returns `Observable<...>`; mirror an existing command like [flattenOutput.ts](../../packages/core/src/app-commands/flattenOutput.ts) for the AbortController + progress-emitter pattern.
+1. **App-command (Observable)** — `packages/core/src/app-commands/<commandName>.ts` (+ `.test.ts`). Returns `Observable<...>`; mirror an existing command like [flattenOutput.ts](../../packages/core/src/app-commands/flattenOutput.ts) for the AbortController + progress-emitter pattern. Import every move, rename, delete, and write from [guardedFileWrites.ts](../../packages/core/src/tools/guardedFileWrites.ts), not `node:fs/promises` or `@mux-magic/tools`: it checks each path against the allowed file roots, and ESLint refuses the direct import ([decision](../decisions/2026-11-14-core-writes-check-every-path-against-the-allowed-roots.md)). A spawn wrapper whose tool writes a file calls `assertWritablePaths` on the output path before it spawns.
 2. **CLI adapter** — `packages/cli/src/cli-commands/<commandName>Command.ts` (yargs `CommandModule`). Then import and `.command(<name>Command)` it in `packages/cli/src/cli.ts`.
 3. **HTTP route + commandName entry** — `packages/api/src/api/routes/commandRoutes.ts`: add the import, append `"<commandName>"` to the `commandNames` array, and add a registry entry to `commandConfigs` with `getObservable`, `schema`, `summary`, `tags`, plus optional `extractOutputs` / `outputFolderName` / `outputComputation`.
 4. **Zod request schema** — `packages/api/src/api/schemas.ts`: export `<commandName>RequestSchema` with `.describe()` text on every field (the per-field describe drives the builder's hover tooltips via the regenerated `command-descriptions.js`). Schemas are re-exported automatically via `@mux-magic/api/api-schemas` for the web side.
@@ -105,7 +105,7 @@ In `cli.ts`, register it with `.command(someCommandCommand)`.
 
 ## makeDirectory
 
-`makeDirectory(directoryPath)` always creates the exact path passed to it using `mkdir(..., { recursive: true })`. Callers that have a **file** path must pass `dirname(filePath)` themselves — `makeDirectory` does not strip the filename. This applies to `getAudioOffset.ts` and `reorderTracksFfmpeg.ts`; callers like `copyFiles.ts` and `splitChaptersFfmpeg.ts` already pass directory paths and need no wrapping.
+`makeDirectory(directoryPath)` (import it from `guardedFileWrites.ts` in core) always creates the exact path passed to it using `mkdir(..., { recursive: true })`. Callers that have a **file** path must pass `dirname(filePath)` themselves — `makeDirectory` does not strip the filename. This applies to `getAudioOffset.ts` and `reorderTracksFfmpeg.ts`; callers like `copyFiles.ts` and `splitChaptersFfmpeg.ts` already pass directory paths and need no wrapping.
 
 ## `FileInfo.filename` is the stem — it has NO extension
 

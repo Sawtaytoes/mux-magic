@@ -1,7 +1,7 @@
-import { writeFile } from "node:fs/promises"
 import { join } from "node:path"
 
 import { COVER_ART_FILENAME } from "../../tools/coverArtArchive.js"
+import { writeFile } from "../../tools/guardedFileWrites.js"
 import {
   type CoverArtImage,
   getCoverArtExtension,

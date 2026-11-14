@@ -7,6 +7,7 @@ import {
   join,
   normalize,
   relative,
+  resolve,
   sep,
   win32,
 } from "node:path"
@@ -229,6 +230,52 @@ export const validateWritablePath = (
   return normalized
 }
 
+// The containment check that core's write primitives
+// (guardedFileWrites.ts) run on every path a command changes, including
+// paths the command builds or finds while it runs. It checks only the
+// allowed file roots, not the API's absolute-path and traversal rules:
+// a CLI user may pass a relative path, so a relative path is resolved
+// against the working directory first. It does nothing when there is no
+// limit (a source install with no ALLOWED_FILE_ROOTS).
+//
+// `isLinkFollowed` says whether the operation acts on what a symbolic
+// link points to (writing, copying onto, or setting times on a file) or
+// on the directory entry itself (renaming, deleting, or creating it). A
+// write through a link that leads outside a root is refused. Renaming
+// or deleting the link itself is allowed when the link sits inside a
+// root, because only the link changes.
+export const assertWritePathInsideAllowedRoots = ({
+  isLinkFollowed,
+  path,
+}: {
+  isLinkFollowed: boolean
+  path: string
+}): void => {
+  const allowedRoots = getAllowedFileRoots()
+  if (allowedRoots === null) {
+    return
+  }
+  const absolutePath = resolve(getCwd(), path)
+  const resolvedPath = isLinkFollowed
+    ? resolveExistingPath(absolutePath)
+    : dirname(absolutePath) === absolutePath
+      ? absolutePath
+      : join(
+          resolveExistingPath(dirname(absolutePath)),
+          basename(absolutePath),
+        )
+  if (
+    !isInsideAllowedRoots({
+      allowedRoots,
+      path: resolvedPath,
+    })
+  ) {
+    throw new PathSafetyError(
+      `Path is outside the allowed file roots (${allowedRoots.join(", ")}): ${path}`,
+    )
+  }
+}
+
 // Command parameters that name a file or folder a command reads from or
 // writes to. `rootPath` is left out on purpose: it is the path a media
 // player sees, written into a JSON file, and it need not exist here.
@@ -273,8 +320,10 @@ const describePathProblem = ({
 // Returns one message per command path parameter that falls outside the
 // allowed file roots. Empty when there is no limit (a source install
 // with no ALLOWED_FILE_ROOTS) or when every path is inside. Commands and
-// sequence steps call this before they run. It checks the parameters
-// only: a path a command builds or discovers later is not checked here.
+// sequence steps call this before they run, so a bad parameter fails
+// before any work starts. A path a command builds or discovers later is
+// checked by core's write primitives instead
+// (assertWritePathInsideAllowedRoots).
 export const findCommandPathsOutsideAllowedRoots = (
   params: Record<string, unknown>,
 ): string[] =>

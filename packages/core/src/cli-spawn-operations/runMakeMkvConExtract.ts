@@ -10,12 +10,12 @@ import {
   parseMakemkvLine,
 } from "@mux-magic/tools"
 import { Observable } from "rxjs"
-
 import { getActiveJobId } from "../api/logCapture.js"
 import {
   makeMkvConPath,
   makeMkvHomePath,
 } from "../tools/appPaths.js"
+import { assertWritablePaths } from "../tools/guardedFileWrites.js"
 import { buildKeyFailureError } from "../tools/makemkv/buildKeyFailureError.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
@@ -53,6 +53,12 @@ export const runMakeMkvConExtract = ({
   titleIndex: number
 }): Observable<string> =>
   new Observable<string>((observer) => {
+    // The tool writes this output itself, outside core's guarded fs
+    // wrappers, so its path is checked here before the spawn.
+    assertWritablePaths({
+      isLinkFollowed: true,
+      paths: [destinationPath, outputFilePath],
+    })
     const jobId = getActiveJobId()
     const emitter =
       jobId === undefined

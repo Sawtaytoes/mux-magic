@@ -1,4 +1,4 @@
-import { stat, utimes } from "node:fs/promises"
+import { stat } from "node:fs/promises"
 import { extname } from "node:path"
 import {
   ByteVector,
@@ -15,6 +15,10 @@ import {
   TagTypes,
   XiphComment,
 } from "node-taglib-sharp"
+import {
+  assertWritablePaths,
+  utimes,
+} from "../../tools/guardedFileWrites.js"
 import type { AudioTags } from "./audioTagFields.js"
 
 const ITUNES_MEAN_STRING = "com.apple.iTunes"
@@ -389,6 +393,12 @@ const applyTagsToAudioFile = ({
     })
 
     if (isFileSaved) {
+      // taglib writes the file itself, outside core's guarded fs
+      // wrappers, so the path is checked before the save.
+      assertWritablePaths({
+        isLinkFollowed: true,
+        paths: [filePath],
+      })
       audioFile.save()
     }
   } finally {

@@ -1,4 +1,3 @@
-import { unlink } from "node:fs/promises"
 import { extname } from "node:path"
 import {
   getFilesAtDepth,
@@ -6,6 +5,7 @@ import {
   logInfo,
 } from "@mux-magic/tools"
 import { defer, filter, map, tap } from "rxjs"
+import { unlink } from "../tools/guardedFileWrites.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export type DeleteFilesByExtensionRequiredProps = {

@@ -150,8 +150,8 @@ import {
   trimFileTailDefaultProps,
 } from "@mux-magic/core/src/app-commands/trimFileTail.js"
 import { writeAudioTags } from "@mux-magic/core/src/app-commands/writeAudioTags.js"
+import { makeDirectory } from "@mux-magic/core/src/tools/guardedFileWrites.js"
 import { findCommandPathsOutsideAllowedRoots } from "@mux-magic/core/src/tools/pathSafety.js"
-import { makeDirectory } from "@mux-magic/tools"
 import type { Context } from "hono"
 import { HTTPException } from "hono/http-exception"
 import type { Observable } from "rxjs"

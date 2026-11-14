@@ -1,4 +1,3 @@
-import { mkdir, writeFile } from "node:fs/promises"
 import { basename, join } from "node:path"
 
 import {
@@ -16,6 +15,10 @@ import {
 import { runMakeMkvCon } from "../cli-spawn-operations/runMakeMkvCon.js"
 import { buildDiscAnalysis } from "../tools/discTitles/buildDiscAnalysis.js"
 import type { DiscAnalysis } from "../tools/discTitles/discTitleAnalysis.js"
+import {
+  mkdir,
+  writeFile,
+} from "../tools/guardedFileWrites.js"
 
 /**
  * Where the analysis lives on disk.
