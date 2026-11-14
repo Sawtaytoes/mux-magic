@@ -355,6 +355,27 @@ export const validateWritablePath = (
   return normalized
 }
 
+const getIsPathPresent = (path: string) => {
+  try {
+    lstatSync(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// The folders above `path` that do not exist yet, nearest first.
+const getMissingAncestorPaths = (
+  path: string,
+): string[] => {
+  const parentPath = dirname(path)
+  return parentPath === path || getIsPathPresent(parentPath)
+    ? []
+    : [parentPath].concat(
+        getMissingAncestorPaths(parentPath),
+      )
+}
+
 // The containment check that core's write primitives
 // (guardedFileWrites.ts) run on every path a command changes, including
 // paths the command builds or finds while it runs. It checks only the
@@ -397,12 +418,18 @@ export const assertWritePathInsideAllowedRoots = ({
       ? path
       : `${getCwd()}${sep}${path}`,
   })
-  if (
-    !isInsideAllowedRoots({
-      allowedRoots,
-      path: resolvedPath,
-    })
-  ) {
+  // A recursive mkdir also creates every missing folder above the path.
+  // Those are inside a root whenever the root exists, but a root that
+  // does not exist yet would let one be created above it.
+  const isEveryCreatedPathInside = [resolvedPath]
+    .concat(getMissingAncestorPaths(resolvedPath))
+    .every((createdPath) =>
+      isInsideAllowedRoots({
+        allowedRoots,
+        path: createdPath,
+      }),
+    )
+  if (!isEveryCreatedPathInside) {
     throw new PathSafetyError(
       `Path is outside the allowed file roots (${allowedRoots.join(", ")}): ${path}`,
     )

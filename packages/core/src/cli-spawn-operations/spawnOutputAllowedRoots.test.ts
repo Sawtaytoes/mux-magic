@@ -183,6 +183,29 @@ describe("spawn wrappers check the output path before they start the tool", () =
     )
   })
 
+  test("runMakeMkvConExtract refuses when an existing .mkv in the destination links outside", async () => {
+    vol.fromJSON({ "/outside/kept.mkv": "kept" })
+    vol.mkdirSync("/media/disc-titles", { recursive: true })
+    vol.symlinkSync(
+      "/outside/kept.mkv",
+      "/media/disc-titles/title_t01.mkv",
+    )
+
+    await expect(
+      firstValueFrom(
+        runMakeMkvConExtract({
+          destinationPath: "/media/disc-titles",
+          minimumTitleLengthSeconds: 0,
+          outputFilePath:
+            "/media/disc-titles/title_t00.mkv",
+          sourcePath: "/media/disc",
+          titleIndex: 0,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+    expect(spawn).not.toHaveBeenCalled()
+  })
+
   test("runMakeMkvConExtract refuses a destination outside the allowed roots", async () => {
     await expect(
       firstValueFrom(

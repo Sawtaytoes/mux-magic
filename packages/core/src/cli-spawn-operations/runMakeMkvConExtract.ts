@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process"
+import { existsSync, readdirSync } from "node:fs"
+import { extname, join } from "node:path"
 import readline from "node:readline"
 
 import {
@@ -39,6 +41,19 @@ const extractionCacheMegabytes = 128
  * reports `01395.m2ts was added as title #1` only because 59 shorter
  * titles were filtered out first.
  */
+// MakeMKV picks its own file names in the destination folder. An `.mkv`
+// already there (a symbolic link, say) could be the name it writes
+// through, so every existing one is checked with the expected name.
+const getExistingMkvPaths = (destinationPath: string) =>
+  existsSync(destinationPath)
+    ? readdirSync(destinationPath)
+        .filter(
+          (fileName) =>
+            extname(fileName).toLowerCase() === ".mkv",
+        )
+        .map((fileName) => join(destinationPath, fileName))
+    : []
+
 export const runMakeMkvConExtract = ({
   destinationPath,
   minimumTitleLengthSeconds,
@@ -57,7 +72,9 @@ export const runMakeMkvConExtract = ({
     // wrappers, so its path is checked here before the spawn.
     assertWritablePaths({
       isLinkFollowed: true,
-      paths: [destinationPath, outputFilePath],
+      paths: [destinationPath, outputFilePath].concat(
+        getExistingMkvPaths(destinationPath),
+      ),
     })
     const jobId = getActiveJobId()
     const emitter =

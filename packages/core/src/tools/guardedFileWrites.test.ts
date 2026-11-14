@@ -376,6 +376,21 @@ describe("with ALLOWED_FILE_ROOTS set, paths a helper computes", () => {
     ).rejects.toBeInstanceOf(PathSafetyError)
   })
 
+  // With a root that does not exist yet, a recursive mkdir would also
+  // create the missing folders above the root.
+  test("refuses a recursive mkdir that would create folders above a missing root", async () => {
+    process.env.ALLOWED_FILE_ROOTS =
+      "/missing-parent/allowed"
+
+    await expect(
+      mkdir("/missing-parent/allowed/child", {
+        recursive: true,
+      }),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+
+    await expect(stat("/missing-parent")).rejects.toThrow()
+  })
+
   test("accepts a `..` that stays inside the root", () => {
     vol.mkdirSync("/media/show/extras", { recursive: true })
 
