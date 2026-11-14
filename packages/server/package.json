@@ -14,18 +14,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@charcuterie/server": "^0.6.0",
+    "@charcuterie/server": "^0.8.0",
     "@hono/node-server": "^2.0.2",
     "@mux-magic/api": "workspace:*",
     "@mux-magic/core": "workspace:*",
     "@mux-magic/tools": "workspace:*",
     "@mux-magic/web": "workspace:*",
-    "hono": "^4.13.5",
-    "vite": "^8.0.16"
+    "hono": "^4.13.5"
   },
   "devDependencies": {
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
+    "vite": "^8.0.16",
     "vitest": "^4.1.8"
   }
 }
