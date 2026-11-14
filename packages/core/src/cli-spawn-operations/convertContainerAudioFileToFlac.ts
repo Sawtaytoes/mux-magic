@@ -1,6 +1,6 @@
-import { unlink } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 import { concatMap, defer, from, map, of } from "rxjs"
+import { unlink } from "../tools/guardedFileWrites.js"
 import { runFfmpeg } from "./runFfmpeg.js"
 
 type ConvertContainerAudioFileToFlacRequiredProps = {

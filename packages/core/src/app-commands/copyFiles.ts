@@ -1,14 +1,11 @@
 import { readdir, stat } from "node:fs/promises"
 import { extname, join } from "node:path"
 import {
-  aclSafeCopyFile,
-  aclSafeCopyFolder,
   applyRenameRegex,
   type CopyOptions,
   getFiles,
   logAndRethrowPipelineError,
   logInfo,
-  makeDirectory,
   type RenameRegex,
   runTasks,
 } from "@mux-magic/tools"
@@ -26,6 +23,11 @@ import {
   toArray,
 } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
+import {
+  aclSafeCopyFile,
+  aclSafeCopyFolder,
+  makeDirectory,
+} from "../tools/guardedFileWrites.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 
 export type CopyRecord = {

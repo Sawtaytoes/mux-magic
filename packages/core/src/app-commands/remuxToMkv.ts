@@ -1,4 +1,4 @@
-import { stat, unlink } from "node:fs/promises"
+import { stat } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
 import {
   getFilesAtDepth,
@@ -15,6 +15,7 @@ import {
   tap,
 } from "rxjs"
 import { remuxMkvMerge } from "../cli-spawn-operations/remuxMkvMerge.js"
+import { unlink } from "../tools/guardedFileWrites.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 // Pass-through container remux for every file in `sourcePath` whose

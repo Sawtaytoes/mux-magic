@@ -1,6 +1,6 @@
-import { mkdir } from "node:fs/promises"
 import { dirname } from "node:path"
 import { concatMap, from, map } from "rxjs"
+import { mkdir } from "../tools/guardedFileWrites.js"
 import { runFfmpeg } from "./runFfmpeg.js"
 
 // Thin per-track wrapper around runFfmpeg. We pass START / END

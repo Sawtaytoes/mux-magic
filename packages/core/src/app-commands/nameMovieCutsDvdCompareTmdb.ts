@@ -22,6 +22,7 @@ import {
 } from "../tools/getFileDuration.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
 import type { TimecodeDeviation } from "../tools/getSpecialFeatureFromTimecode.js"
+import { renameListedFile } from "../tools/guardedFileWrites.js"
 import { parseSpecialFeatures } from "../tools/parseSpecialFeatures.js"
 import { searchDvdCompare } from "../tools/searchDvdCompare.js"
 import type { NameMovieCutsResult } from "./nameMovieCutsDvdCompareTmdb.events.js"
@@ -141,34 +142,35 @@ export const nameMovieCutsDvdCompareTmdb = ({
                     movie,
                     matchedCut.name,
                   )
-                return fileInfo
-                  .renameFile(renamedBaseName)
-                  .pipe(
-                    concatMap(
-                      ({
-                        newPath,
-                      }): Observable<NameMovieCutsResult> =>
-                        moveFileToEditionFolder({
-                          sourceFilePath: newPath,
-                          movie,
-                        }).pipe(
-                          map(
-                            (
-                              moveResult,
-                            ): NameMovieCutsResult => ({
-                              oldName: originalFilename,
-                              newName: basename(newPath),
-                              destinationPath:
-                                moveResult !== null &&
-                                "hasMovedToEditionFolder" in
-                                  moveResult
-                                  ? moveResult.destinationPath
-                                  : newPath,
-                            }),
-                          ),
+                return renameListedFile({
+                  fileInfo,
+                  renamedFilename: renamedBaseName,
+                }).pipe(
+                  concatMap(
+                    ({
+                      newPath,
+                    }): Observable<NameMovieCutsResult> =>
+                      moveFileToEditionFolder({
+                        sourceFilePath: newPath,
+                        movie,
+                      }).pipe(
+                        map(
+                          (
+                            moveResult,
+                          ): NameMovieCutsResult => ({
+                            oldName: originalFilename,
+                            newName: basename(newPath),
+                            destinationPath:
+                              moveResult !== null &&
+                              "hasMovedToEditionFolder" in
+                                moveResult
+                                ? moveResult.destinationPath
+                                : newPath,
+                          }),
                         ),
-                    ),
-                  )
+                      ),
+                  ),
+                )
               },
             ),
           ),

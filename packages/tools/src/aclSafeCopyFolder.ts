@@ -32,12 +32,18 @@ const buildAbortError = (signal: AbortSignal) =>
 const copySymbolicLink = async ({
   destination,
   isOverwriteAllowed,
+  options,
   source,
 }: {
   destination: string
   isOverwriteAllowed: boolean
+  options?: CopyFolderOptions
   source: string
 }) => {
+  options?.assertWritablePath?.({
+    isLinkFollowed: false,
+    path: destination,
+  })
   const linkTarget = await readlink(source)
   try {
     await symlink(linkTarget, destination)
@@ -86,6 +92,10 @@ export const aclSafeCopyFolder = async (
   const isOverwriteAllowed =
     options?.isOverwriteAllowed === true
 
+  options?.assertWritablePath?.({
+    isLinkFollowed: false,
+    path: destination,
+  })
   await mkdir(destination, { recursive: true })
 
   const entries = await readdir(source, {
@@ -106,6 +116,7 @@ export const aclSafeCopyFolder = async (
       return copySymbolicLink({
         destination: entryDestination,
         isOverwriteAllowed,
+        options,
         source: entrySource,
       })
     }

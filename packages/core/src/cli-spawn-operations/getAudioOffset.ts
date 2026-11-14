@@ -1,10 +1,6 @@
 import { existsSync } from "node:fs"
 import { basename, dirname } from "node:path"
-import {
-  logInfo,
-  makeDirectory,
-  runTask,
-} from "@mux-magic/tools"
+import { logInfo, runTask } from "@mux-magic/tools"
 import {
   concatMap,
   defer,
@@ -18,6 +14,7 @@ import { getActiveJobId } from "../api/logCapture.js"
 import { getFileDuration } from "../tools/getFileDuration.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
 import { getOutputPath } from "../tools/getOutputPath.js"
+import { makeDirectory } from "../tools/guardedFileWrites.js"
 import { AUDIO_OFFSETS_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { runAudioOffsetFinder } from "./runAudioOffsetFinder.js"

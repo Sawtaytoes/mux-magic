@@ -9,15 +9,17 @@
 // (a split part inherits the play-all file's chapter numbers, so part 2
 // starts at `Chapter 04` instead of `Chapter 01`).
 
+// The chapter XML is a scratch file in the OS temp folder, not a media
+// path, so it is written and removed outside the allowed-roots check.
+/* eslint-disable no-restricted-imports -- temp file under os.tmpdir(), not media; see the comment above. */
 import {
-  rename,
-  rm,
-  unlink,
-  writeFile,
+  rm as removeTemporaryFile,
+  writeFile as writeTemporaryFile,
 } from "node:fs/promises"
+/* eslint-enable no-restricted-imports */
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { aclSafeCopyFile, logError } from "@mux-magic/tools"
+import { logError } from "@mux-magic/tools"
 import {
   catchError,
   defer,
@@ -30,6 +32,11 @@ import {
 } from "rxjs"
 import { runMkvExtractStdOut } from "../cli-spawn-operations/runMkvExtractStdOut.js"
 import { writeChaptersMkvMerge } from "../cli-spawn-operations/writeChaptersMkvMerge.js"
+import {
+  aclSafeCopyFile,
+  rename,
+  unlink,
+} from "./guardedFileWrites.js"
 import {
   type RenumberChapterXmlResult,
   renumberChapterXml,
@@ -117,7 +124,11 @@ const performRemux = ({
       `mux-magic-chapters-${randomSuffix}.xml`,
     )
     const tempOutputPath = `${filePath}.renumbered.${randomSuffix}.mkv`
-    await writeFile(tempXmlPath, xmlResult.xml, "utf8")
+    await writeTemporaryFile(
+      tempXmlPath,
+      xmlResult.xml,
+      "utf8",
+    )
     try {
       await new Promise<string>(
         (resolvePromise, reject) => {
@@ -138,7 +149,9 @@ const performRemux = ({
       })
     } finally {
       // Best-effort temp-xml cleanup — leftover XML in /tmp is harmless.
-      await rm(tempXmlPath, { force: true }).catch(() => {})
+      await removeTemporaryFile(tempXmlPath, {
+        force: true,
+      }).catch(() => {})
     }
     // Suppress unused-var warning while preserving the binding for
     // future caller refactors that may want to switch padding behavior

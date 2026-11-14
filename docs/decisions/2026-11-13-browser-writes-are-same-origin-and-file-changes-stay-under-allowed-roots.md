@@ -3,12 +3,15 @@
 > [!WARNING]
 > **SUPERSEDED IN PART on 2026-11-13 by [The API uses the shared Charcuterie write guard](2026-11-13-the-api-uses-the-shared-charcuterie-write-guard.md).**
 > Only the write rule in the first bullet changed: the shared guard also checks `Host` against `ALLOWED_HOSTS` and asks a write for a JSON `Content-Type`, so a request with no `Origin` is no longer let through unchecked. Everything else below still holds.
+>
+> **ALSO SUPERSEDED IN PART on 2026-11-14 by [Core writes check every path against the allowed roots](2026-11-14-core-writes-check-every-path-against-the-allowed-roots.md).**
+> Only the sentence in the fourth bullet that calls the command check "a check on the parameters, not a sandbox" changed: core's write primitives now check every path a command builds or finds, too.
 
-- **Status:** Accepted; superseded in part by [2026-11-13](2026-11-13-the-api-uses-the-shared-charcuterie-write-guard.md)
+- **Status:** Accepted; superseded in part by [2026-11-13](2026-11-13-the-api-uses-the-shared-charcuterie-write-guard.md) and [2026-11-14](2026-11-14-core-writes-check-every-path-against-the-allowed-roots.md)
 - **Date:** 2026-11-13
 - **Type:** server/api
 - **Supersedes:** —
-- **Superseded by:** [2026-11-13 — The API uses the shared Charcuterie write guard](2026-11-13-the-api-uses-the-shared-charcuterie-write-guard.md), in part
+- **Superseded by:** [2026-11-13 — The API uses the shared Charcuterie write guard](2026-11-13-the-api-uses-the-shared-charcuterie-write-guard.md), in part; [2026-11-14 — Core writes check every path against the allowed roots](2026-11-14-core-writes-check-every-path-against-the-allowed-roots.md), in part
 - **Source:** 2026-11-12 code audit (security findings); the owner asked for all of its findings to be fixed
 
 ## Decision

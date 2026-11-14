@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process"
+import { existsSync, readdirSync } from "node:fs"
+import { extname, join } from "node:path"
 import readline from "node:readline"
 
 import {
@@ -10,12 +12,12 @@ import {
   parseMakemkvLine,
 } from "@mux-magic/tools"
 import { Observable } from "rxjs"
-
 import { getActiveJobId } from "../api/logCapture.js"
 import {
   makeMkvConPath,
   makeMkvHomePath,
 } from "../tools/appPaths.js"
+import { assertWritablePaths } from "../tools/guardedFileWrites.js"
 import { buildKeyFailureError } from "../tools/makemkv/buildKeyFailureError.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
@@ -39,6 +41,19 @@ const extractionCacheMegabytes = 128
  * reports `01395.m2ts was added as title #1` only because 59 shorter
  * titles were filtered out first.
  */
+// MakeMKV picks its own file names in the destination folder. An `.mkv`
+// already there (a symbolic link, say) could be the name it writes
+// through, so every existing one is checked with the expected name.
+const getExistingMkvPaths = (destinationPath: string) =>
+  existsSync(destinationPath)
+    ? readdirSync(destinationPath)
+        .filter(
+          (fileName) =>
+            extname(fileName).toLowerCase() === ".mkv",
+        )
+        .map((fileName) => join(destinationPath, fileName))
+    : []
+
 export const runMakeMkvConExtract = ({
   destinationPath,
   minimumTitleLengthSeconds,
@@ -53,6 +68,14 @@ export const runMakeMkvConExtract = ({
   titleIndex: number
 }): Observable<string> =>
   new Observable<string>((observer) => {
+    // The tool writes this output itself, outside core's guarded fs
+    // wrappers, so its path is checked here before the spawn.
+    assertWritablePaths({
+      isLinkFollowed: true,
+      paths: [destinationPath, outputFilePath].concat(
+        getExistingMkvPaths(destinationPath),
+      ),
+    })
     const jobId = getActiveJobId()
     const emitter =
       jobId === undefined

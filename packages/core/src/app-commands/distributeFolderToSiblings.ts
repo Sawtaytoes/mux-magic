@@ -1,4 +1,4 @@
-import { rm, stat } from "node:fs/promises"
+import { stat } from "node:fs/promises"
 import {
   basename,
   dirname,
@@ -6,7 +6,6 @@ import {
   relative,
 } from "node:path"
 import {
-  aclSafeCopyFile,
   type CopyOptions,
   type FileInfo,
   type FolderInfo,
@@ -14,7 +13,6 @@ import {
   getFolder,
   logAndRethrowPipelineError,
   logInfo,
-  makeDirectory,
   runTasks,
 } from "@mux-magic/tools"
 import {
@@ -30,6 +28,11 @@ import {
   toArray,
 } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
+import {
+  aclSafeCopyFile,
+  makeDirectory,
+  rm,
+} from "../tools/guardedFileWrites.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 
 type DistributeRecord = {

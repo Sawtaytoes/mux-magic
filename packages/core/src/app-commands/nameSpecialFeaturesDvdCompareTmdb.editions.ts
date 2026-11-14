@@ -1,10 +1,5 @@
-import {
-  access,
-  rename as fsRename,
-  readdir,
-} from "node:fs/promises"
+import { access, readdir } from "node:fs/promises"
 import { basename, dirname, extname, join } from "node:path"
-import { makeDirectory } from "@mux-magic/tools"
 import {
   concatMap,
   defer,
@@ -13,6 +8,10 @@ import {
   of,
 } from "rxjs"
 import type { MovieIdentity } from "../tools/canonicalizeMovieTitle.js"
+import {
+  rename as fsRename,
+  makeDirectory,
+} from "../tools/guardedFileWrites.js"
 import { buildEditionPlan } from "./nameSpecialFeaturesDvdCompareTmdb.buildEditionPlan.js"
 import {
   isMainFeatureFilename,

@@ -1,6 +1,6 @@
-import { readdir, rmdir } from "node:fs/promises"
+import { readdir } from "node:fs/promises"
 import { logWarning } from "@mux-magic/tools"
-
+import { rmdir } from "./guardedFileWrites.js"
 import { hasErrorCode } from "./moveSingleFile.js"
 
 export type RemoveEmptyFolderResult = "removed" | "kept"

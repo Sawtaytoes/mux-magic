@@ -1,4 +1,3 @@
-import { unlink } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import type { LanguageSelection } from "@mux-magic/api/src/api/languageSelection.js"
 import {
@@ -18,6 +17,7 @@ import {
   getMkvInfo,
   type MkvInfo,
 } from "../tools/getMkvInfo.js"
+import { unlink } from "../tools/guardedFileWrites.js"
 import { LANGUAGE_TRIMMED_FOLDER_NAME } from "../tools/outputFolderNames.js"
 import { runMkvMerge } from "./runMkvMerge.js"
 

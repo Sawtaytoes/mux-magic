@@ -3,8 +3,6 @@ import {
   getFiles,
   logAndRethrowPipelineError,
   logInfo,
-  makeDirectory,
-  renameFileOrFolder,
 } from "@mux-magic/tools"
 import {
   concatMap,
@@ -13,6 +11,10 @@ import {
   of,
   tap,
 } from "rxjs"
+import {
+  makeDirectory,
+  renameFileOrFolder,
+} from "../tools/guardedFileWrites.js"
 
 type MoveRecord = {
   source: string

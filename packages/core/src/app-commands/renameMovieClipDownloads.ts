@@ -2,6 +2,7 @@ import {
   getFiles,
   logAndRethrowPipelineError,
 } from "@mux-magic/tools"
+import { renameListedFile } from "../tools/guardedFileWrites.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const renameMovieClipDownloads = ({
@@ -14,8 +15,9 @@ export const renameMovieClipDownloads = ({
   }).pipe(
     withFileProgress(
       (fileInfo) =>
-        fileInfo.renameFile(
-          fileInfo.filename
+        renameListedFile({
+          fileInfo,
+          renamedFilename: fileInfo.filename
             .replace(
               /(.+) \[(\d+)\] \((.+)\) (.+)\.(.{3})/,
               "$1 ($2) [$3] {$4}.$5",
@@ -24,7 +26,7 @@ export const renameMovieClipDownloads = ({
             .replace(/(.+)-\d{3}/, "$1")
             .replace(/(.+) \d+bits/, "$1")
             .replace(/(.+) \d+bits/, "$1"),
-        ),
+        }),
       { concurrency: Infinity },
     ),
     logAndRethrowPipelineError(renameMovieClipDownloads),

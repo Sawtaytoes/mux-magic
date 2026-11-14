@@ -1,10 +1,6 @@
 import { readdir, stat } from "node:fs/promises"
 import { basename, extname, join } from "node:path"
-import {
-  logInfo,
-  makeDirectory,
-  renameFileOrFolder,
-} from "@mux-magic/tools"
+import { logInfo } from "@mux-magic/tools"
 import {
   catchError,
   concatMap,
@@ -20,6 +16,10 @@ import {
 } from "rxjs"
 import { getFileDuration } from "../tools/getFileDuration.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
+import {
+  makeDirectory,
+  renameFileOrFolder,
+} from "../tools/guardedFileWrites.js"
 import type { UnrenamedFile } from "./nameSpecialFeaturesDvdCompareTmdb.buildUnnamedFileCandidates.js"
 
 // Worker 25: the filesystem is the cache.

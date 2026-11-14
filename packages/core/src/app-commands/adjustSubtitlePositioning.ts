@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 import {
   getFilesAtDepth,
   logAndRethrowPipelineError,
@@ -6,6 +6,7 @@ import {
 } from "@mux-magic/tools"
 import { concatMap, defer, map, tap, toArray } from "rxjs"
 import { filterIsSubtitlesFile } from "../tools/filterIsSubtitlesFile.js"
+import { writeFile } from "../tools/guardedFileWrites.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const adjustPositionString = (

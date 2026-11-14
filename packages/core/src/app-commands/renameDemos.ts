@@ -5,6 +5,7 @@ import {
 import { mergeMap } from "rxjs"
 import { getDemoName } from "../tools/getDemoName.js"
 import { getMediaInfo } from "../tools/getMediaInfo.js"
+import { renameListedFile } from "../tools/guardedFileWrites.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export const renameDemos = ({
@@ -28,7 +29,7 @@ export const renameDemos = ({
             }),
           ),
           mergeMap((renamedFilename) =>
-            fileInfo.renameFile(renamedFilename),
+            renameListedFile({ fileInfo, renamedFilename }),
           ),
         ),
       { concurrency: Infinity },

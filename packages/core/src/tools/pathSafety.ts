@@ -1,11 +1,11 @@
-import { existsSync, realpathSync } from "node:fs"
+import { lstatSync, readlinkSync } from "node:fs"
 import {
-  basename,
   delimiter,
   dirname,
   isAbsolute,
   join,
   normalize,
+  parse,
   relative,
   sep,
   win32,
@@ -176,21 +176,147 @@ export const isPathUnderRoot = ({
   )
 }
 
-// Resolves symbolic links in the part of the path that exists, then
-// adds back the parts that do not exist yet (a rename target, say). A
-// link inside a root that points outside it therefore resolves outside,
-// and the containment check sees where the change would really land.
-export const resolveExistingPath = (
-  path: string,
-): string =>
-  existsSync(path)
-    ? realpathSync(path)
-    : dirname(path) === path
-      ? path
-      : join(
-          resolveExistingPath(dirname(path)),
-          basename(path),
-        )
+// The same limit Linux uses before it reports ELOOP.
+const maximumLinkHops = 40
+
+const getIsSymbolicLink = (path: string) => {
+  try {
+    return lstatSync(path).isSymbolicLink()
+  } catch {
+    return false
+  }
+}
+
+// Resolves the path the way the operating system walks it: one segment
+// at a time, following each symbolic link as it is reached, and taking
+// `..` as the parent of the folder reached so far. Lexical
+// normalization (`resolve`, `join`) would take `/media/hop/..` as
+// `/media` even when `hop` links to `/outside/child`, where the system
+// lands in `/outside`. A link whose target does not exist yet is still
+// followed, so a write through it is checked where it would land.
+// `isLastLinkFollowed: false` leaves a link in the last segment as it
+// is, for operations that change the link itself.
+// Only the host's own separator splits a path: on Linux a backslash is
+// an ordinary character in a file name, so `/media/a\b` is one entry.
+const separatorPattern = sep === "\\" ? /[\\/]+/u : /\/+/u
+
+type PhysicalWalk = {
+  hopCount: number
+  path: string
+}
+
+// `hopCount` is carried through the whole walk, so every link followed
+// anywhere in the path counts against one limit, as on Linux. A budget
+// per segment would let a small set of links that expand into each
+// other cost exponential work.
+const walkPhysicalPath = ({
+  hopCount,
+  isLastLinkFollowed,
+  path,
+}: {
+  hopCount: number
+  isLastLinkFollowed: boolean
+  path: string
+}): PhysicalWalk => {
+  const { root } = parse(path)
+  const rawSegments = path
+    .slice(root.length)
+    .split(separatorPattern)
+  const lastRawSegment = rawSegments.at(-1)
+  // A trailing separator or `.` makes the system resolve the last
+  // entry as a folder, which follows a link there.
+  const isFinalLinkFollowed =
+    isLastLinkFollowed ||
+    lastRawSegment === "" ||
+    lastRawSegment === "."
+  const segments = rawSegments.filter(
+    (segment) => segment.length > 0 && segment !== ".",
+  )
+  return segments.reduce<PhysicalWalk>(
+    (walk, segment, index) =>
+      segment === ".."
+        ? {
+            hopCount: walk.hopCount,
+            path: dirname(walk.path),
+          }
+        : index === segments.length - 1 &&
+            !isFinalLinkFollowed
+          ? {
+              hopCount: walk.hopCount,
+              path: join(walk.path, segment),
+            }
+          : followSymbolicLink({
+              hopCount: walk.hopCount,
+              path: join(walk.path, segment),
+            }),
+    { hopCount, path: root },
+  )
+}
+
+// A link target is raw bytes on Linux and need not be valid UTF-8.
+// Decoding it as a string would replace the bad bytes, and the walk would
+// follow a different path than the system does, so such a target is
+// refused instead.
+const readLinkTarget = (path: string): string => {
+  const targetBytes = readlinkSync(path, {
+    encoding: "buffer",
+  })
+  const target = targetBytes.toString("utf8")
+  if (!Buffer.from(target, "utf8").equals(targetBytes)) {
+    throw new PathSafetyError(
+      `Symbolic link target is not valid UTF-8: ${path}`,
+    )
+  }
+  return target
+}
+
+const followSymbolicLink = ({
+  hopCount,
+  path,
+}: PhysicalWalk): PhysicalWalk => {
+  if (!getIsSymbolicLink(path)) {
+    return { hopCount, path }
+  }
+  if (hopCount >= maximumLinkHops) {
+    throw new PathSafetyError(
+      `Too many symbolic links: ${path}`,
+    )
+  }
+  const linkTarget = readLinkTarget(path)
+  return walkPhysicalPath({
+    hopCount: hopCount + 1,
+    isLastLinkFollowed: true,
+    // Concatenated, not joined: join would collapse a `..` in the
+    // target before the walk could see it.
+    path: isAbsolute(linkTarget)
+      ? linkTarget
+      : `${dirname(path)}${sep}${linkTarget}`,
+  })
+}
+
+const resolvePhysicalPath = ({
+  isLastLinkFollowed,
+  path,
+}: {
+  isLastLinkFollowed: boolean
+  path: string
+}): string =>
+  walkPhysicalPath({
+    hopCount: 0,
+    isLastLinkFollowed,
+    path,
+  }).path
+
+// Resolves every symbolic link in the path, including one whose target
+// does not exist yet, and keeps the parts that do not exist (a rename
+// target, say). A link inside a root that points outside it therefore
+// resolves outside, and the containment check sees where the change
+// would really land.
+export const resolveExistingPath = (path: string): string =>
+  resolvePhysicalPath({
+    isLastLinkFollowed: true,
+    path,
+  })
 
 const isInsideAllowedRoots = ({
   allowedRoots,
@@ -227,6 +353,102 @@ export const validateWritablePath = (
     )
   }
   return normalized
+}
+
+const getIsPathPresent = (path: string) => {
+  try {
+    lstatSync(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// The folders above `path` that do not exist yet, nearest first.
+const getMissingAncestorPaths = (
+  path: string,
+): string[] => {
+  const parentPath = dirname(path)
+  return parentPath === path || getIsPathPresent(parentPath)
+    ? []
+    : [parentPath].concat(
+        getMissingAncestorPaths(parentPath),
+      )
+}
+
+// The containment check that core's write primitives
+// (guardedFileWrites.ts) run on every path a command changes, including
+// paths the command builds or finds while it runs. It checks only the
+// allowed file roots, not the API's absolute-path and traversal rules:
+// a CLI user may pass a relative path, so a relative path is resolved
+// against the working directory first. Links and `..` are resolved the
+// way the operating system walks them (resolvePhysicalPath). It does nothing when there is no
+// limit (a source install with no ALLOWED_FILE_ROOTS).
+//
+// `isLinkFollowed` says whether the operation acts on what a symbolic
+// link points to (writing, copying onto, or setting times on a file) or
+// on the directory entry itself (renaming, deleting, or creating it). A
+// write through a link that leads outside a root is refused. Renaming
+// or deleting the link itself is allowed when the link sits inside a
+// root, because only the link changes.
+export const assertWritePathInsideAllowedRoots = ({
+  isLinkFollowed,
+  path,
+}: {
+  isLinkFollowed: boolean
+  path: string
+}): void => {
+  const allowedRoots = getAllowedFileRoots()
+  if (allowedRoots === null) {
+    return
+  }
+  // Concatenated, not resolved: `resolve` would collapse a `..` before
+  // the walk could see where it really leads.
+  // A Windows drive-relative path (`C:file`, `C:..\file`) resolves
+  // against that drive's own working directory, which this process
+  // cannot see, so it is refused rather than guessed at.
+  if (!isAbsolute(path) && parse(path).root !== "") {
+    throw new PathSafetyError(
+      `Drive-relative paths are not allowed when file roots are set. Use a fully qualified path: ${path}`,
+    )
+  }
+  // A `..` in the path itself is refused, as the API refuses it. The
+  // system and a recursive mkdir both walk the raw segments, so a path
+  // such as `/outside/new/../../media/child` could create `/outside/new`
+  // before it lands inside a root. Core builds paths with `join`, which
+  // removes `..`, so only a hand-typed CLI path is affected. A `..`
+  // inside a link target is still resolved by the walk.
+  if (
+    path
+      .split(separatorPattern)
+      .some((segment) => segment === "..")
+  ) {
+    throw new PathSafetyError(
+      `Path traversal is not allowed when file roots are set: ${path}`,
+    )
+  }
+  const resolvedPath = resolvePhysicalPath({
+    isLastLinkFollowed: isLinkFollowed,
+    path: isAbsolute(path)
+      ? path
+      : `${getCwd()}${sep}${path}`,
+  })
+  // A recursive mkdir also creates every missing folder above the path.
+  // Those are inside a root whenever the root exists, but a root that
+  // does not exist yet would let one be created above it.
+  const isEveryCreatedPathInside = [resolvedPath]
+    .concat(getMissingAncestorPaths(resolvedPath))
+    .every((createdPath) =>
+      isInsideAllowedRoots({
+        allowedRoots,
+        path: createdPath,
+      }),
+    )
+  if (!isEveryCreatedPathInside) {
+    throw new PathSafetyError(
+      `Path is outside the allowed file roots (${allowedRoots.join(", ")}): ${path}`,
+    )
+  }
 }
 
 // Command parameters that name a file or folder a command reads from or
@@ -273,8 +495,10 @@ const describePathProblem = ({
 // Returns one message per command path parameter that falls outside the
 // allowed file roots. Empty when there is no limit (a source install
 // with no ALLOWED_FILE_ROOTS) or when every path is inside. Commands and
-// sequence steps call this before they run. It checks the parameters
-// only: a path a command builds or discovers later is not checked here.
+// sequence steps call this before they run, so a bad parameter fails
+// before any work starts. A path a command builds or discovers later is
+// checked by core's write primitives instead
+// (assertWritePathInsideAllowedRoots).
 export const findCommandPathsOutsideAllowedRoots = (
   params: Record<string, unknown>,
 ): string[] =>

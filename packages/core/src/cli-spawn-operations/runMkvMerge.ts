@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process"
-import { unlink } from "node:fs/promises"
+import { existsSync, readdirSync } from "node:fs"
+import { dirname } from "node:path"
 import {
   logAndSwallowPipelineError,
   logInfo,
@@ -11,6 +12,11 @@ import { Observable } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
 import { mkvMergePath } from "../tools/appPaths.js"
 import { createTtyAffordances } from "../tools/createTtyAffordances.js"
+import { getSplitOutputFilePaths } from "../tools/getSplitOutputFilePaths.js"
+import {
+  assertWritablePaths,
+  unlink,
+} from "../tools/guardedFileWrites.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
@@ -26,6 +32,25 @@ const cliProgressBar = new cliProgress.SingleBar({
 
 const progressRegex = /Progress: (\d+)%/
 
+// With `--split`, mkvmerge writes numbered parts (`name-001.mkv`) beside
+// the `--output` path instead of the path itself. A part that already
+// exists there (a symbolic link, say) would be written through, so each
+// existing part path is checked along with the output path.
+const getExistingSplitPartPaths = ({
+  args,
+  outputFilePath,
+}: {
+  args: string[]
+  outputFilePath: string
+}) =>
+  args.includes("--split") &&
+  existsSync(dirname(outputFilePath))
+    ? getSplitOutputFilePaths({
+        fileNames: readdirSync(dirname(outputFilePath)),
+        outputFilePath,
+      })
+    : []
+
 export const runMkvMerge = ({
   args,
   outputFilePath,
@@ -34,6 +59,14 @@ export const runMkvMerge = ({
   outputFilePath: string
 }): Observable<string> =>
   new Observable<string>((observer) => {
+    // The tool writes this output itself, outside core's guarded fs
+    // wrappers, so its path is checked here before the spawn.
+    assertWritablePaths({
+      isLinkFollowed: true,
+      paths: [outputFilePath].concat(
+        getExistingSplitPartPaths({ args, outputFilePath }),
+      ),
+    })
     // Bind a per-file progress emitter to the active job (if any).
     // Each runMkvMerge invocation handles a single output file — the
     // tracker publishes that file's progress as a row in the

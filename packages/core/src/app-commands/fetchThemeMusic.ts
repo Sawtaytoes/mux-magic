@@ -1,12 +1,4 @@
-import {
-  access,
-  mkdir,
-  readdir,
-  rename,
-  rm,
-  stat,
-  writeFile,
-} from "node:fs/promises"
+import { access, readdir, stat } from "node:fs/promises"
 import { basename, dirname, join } from "node:path"
 import {
   catchError,
@@ -23,6 +15,12 @@ import {
   getAnimeThemeWithMainShowFallback,
   type ResolvedAnimeTheme,
 } from "../tools/animeThemesApi.js"
+import {
+  mkdir,
+  rename,
+  rm,
+  writeFile,
+} from "../tools/guardedFileWrites.js"
 
 const ANIDB_FOLDER_ID = /\[anidb-(?<anidbId>\d+)]/i
 

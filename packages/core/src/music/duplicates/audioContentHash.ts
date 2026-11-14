@@ -1,9 +1,8 @@
 import { execFile as execFileCallback } from "node:child_process"
-import { open } from "node:fs/promises"
 import { extname } from "node:path"
 import { promisify } from "node:util"
-
 import { ffmpegPath } from "../../tools/appPaths.js"
+import { open } from "../../tools/guardedFileWrites.js"
 
 const execFile = promisify(execFileCallback)
 

@@ -3,7 +3,6 @@ import { dirname } from "node:path"
 import {
   logAndRethrowPipelineError,
   logInfo,
-  makeDirectory,
 } from "@mux-magic/tools"
 import {
   catchError,
@@ -20,6 +19,7 @@ import {
   DEFAULT_NAMING_SCRIPT,
 } from "../music/naming/defaultNamingScript.js"
 import { formatTrackPath } from "../music/naming/formatTrackPath.js"
+import { makeDirectory } from "../tools/guardedFileWrites.js"
 import { moveSingleFile } from "../tools/moveSingleFile.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 import {

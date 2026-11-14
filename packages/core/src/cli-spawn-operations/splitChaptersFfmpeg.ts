@@ -1,6 +1,6 @@
-import { makeDirectory } from "@mux-magic/tools"
 import { concatMap, map, of } from "rxjs"
 import { getOutputPath } from "../tools/getOutputPath.js"
+import { makeDirectory } from "../tools/guardedFileWrites.js"
 import { runFfmpeg } from "./runFfmpeg.js"
 
 export const segmentSplitsFolderName = "SEGMENT-SPLITS"

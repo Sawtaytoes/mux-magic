@@ -1,7 +1,6 @@
 import { stat } from "node:fs/promises"
 import { basename, dirname, join } from "node:path"
 import {
-  aclSafeCopyFile,
   type CopyOptions,
   getFiles,
   logAndRethrowPipelineError,
@@ -20,6 +19,7 @@ import {
   toArray,
 } from "rxjs"
 import { getActiveJobId } from "../api/logCapture.js"
+import { aclSafeCopyFile } from "../tools/guardedFileWrites.js"
 import { moveSingleFile } from "../tools/moveSingleFile.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
 import { removeEmptyFolder } from "../tools/removeEmptyFolder.js"

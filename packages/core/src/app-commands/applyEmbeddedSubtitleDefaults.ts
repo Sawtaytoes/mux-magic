@@ -1,19 +1,19 @@
 import { createHash, randomUUID } from "node:crypto"
-import {
-  mkdir,
-  rename,
-  rmdir,
-  stat,
-  unlink,
-} from "node:fs/promises"
+import { stat } from "node:fs/promises"
 import { dirname, extname, join } from "node:path"
 import {
-  aclSafeCopyFile,
   getFilesAtDepth,
   logAndRethrowPipelineError,
 } from "@mux-magic/tools"
 import { defer, filter, toArray } from "rxjs"
 import { applyDefaultAssHeaderRules } from "../tools/applyDefaultAssHeaderRules.js"
+import {
+  aclSafeCopyFile,
+  mkdir,
+  rename,
+  rmdir,
+  unlink,
+} from "../tools/guardedFileWrites.js"
 import {
   inspectMatroskaTrackHeaders,
   readMatroskaTracks,

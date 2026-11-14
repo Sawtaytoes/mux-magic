@@ -1,11 +1,12 @@
-import { stat, unlink } from "node:fs/promises"
-import {
-  aclSafeCopyFile,
-  type CopyOptions,
-  renameOntoDestination,
-} from "@mux-magic/tools"
+import { stat } from "node:fs/promises"
+import type { CopyOptions } from "@mux-magic/tools"
 
 import { getPlatform } from "./currentEnvironment.js"
+import {
+  aclSafeCopyFile,
+  renameOntoDestination,
+  unlink,
+} from "./guardedFileWrites.js"
 
 // A move is `fs.rename` — no temp file, no byte copy on the same
 // volume. Extracted from moveFiles so every command that moves a file

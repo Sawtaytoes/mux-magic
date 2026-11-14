@@ -2,7 +2,6 @@ import {
   access,
   constants,
   readFile,
-  writeFile,
 } from "node:fs/promises"
 import { join, sep } from "node:path"
 import {
@@ -32,6 +31,7 @@ import {
   getMediaInfo,
   type VideoTrack,
 } from "../tools/getMediaInfo.js"
+import { writeFile } from "../tools/guardedFileWrites.js"
 import { withFileProgress } from "../tools/progressEmitter.js"
 
 export type AspectRatioData = Record<

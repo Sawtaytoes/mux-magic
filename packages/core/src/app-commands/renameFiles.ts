@@ -1,4 +1,3 @@
-import { rename } from "node:fs/promises"
 import {
   dirname,
   extname,
@@ -21,6 +20,7 @@ import {
   of,
   toArray,
 } from "rxjs"
+import { rename } from "../tools/guardedFileWrites.js"
 import {
   compileFilterRegex,
   type RegexFilterInput,

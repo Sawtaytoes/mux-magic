@@ -1,8 +1,16 @@
-import { stat } from "node:fs/promises"
+import { readFile, stat } from "node:fs/promises"
 import { join } from "node:path"
 import { vol } from "memfs"
 import { firstValueFrom, toArray } from "rxjs"
-import { beforeEach, describe, expect, test } from "vitest"
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "vitest"
+
+import { PathSafetyError } from "../tools/pathSafety.js"
 
 import { deleteFilesByExtension } from "./deleteFilesByExtension.js"
 
@@ -49,5 +57,47 @@ describe(deleteFilesByExtension.name, () => {
     await expect(
       stat("/anime-subtitles/subtitles/extra.srt"),
     ).rejects.toThrow()
+  })
+
+  describe("with ALLOWED_FILE_ROOTS set", () => {
+    const originalAllowedFileRoots =
+      process.env.ALLOWED_FILE_ROOTS
+
+    beforeEach(() => {
+      process.env.ALLOWED_FILE_ROOTS = "/anime-subtitles"
+      vol.fromJSON({ "/outside/kept.srt": "kept" })
+      vol.symlinkSync(
+        "/outside",
+        "/anime-subtitles/linked-folder",
+      )
+    })
+
+    afterEach(() => {
+      if (originalAllowedFileRoots === undefined) {
+        delete process.env.ALLOWED_FILE_ROOTS
+      } else {
+        process.env.ALLOWED_FILE_ROOTS =
+          originalAllowedFileRoots
+      }
+    })
+
+    // The walk finds the file by descending through a folder link, so
+    // the path is computed while the command runs.
+    test("refuses a file reached through a folder link that leaves the root", async () => {
+      await expect(
+        firstValueFrom(
+          deleteFilesByExtension({
+            extensions: [".srt"],
+            isRecursive: true,
+            recursiveDepth: 2,
+            sourcePath: "/anime-subtitles",
+          }).pipe(toArray()),
+        ),
+      ).rejects.toBeInstanceOf(PathSafetyError)
+
+      await expect(
+        readFile("/outside/kept.srt", "utf8"),
+      ).resolves.toBe("kept")
+    })
   })
 })
