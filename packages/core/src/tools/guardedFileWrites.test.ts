@@ -1,3 +1,4 @@
+import * as fileSystemSync from "node:fs"
 import { readFile, stat } from "node:fs/promises"
 import { vol } from "memfs"
 import { firstValueFrom } from "rxjs"
@@ -64,6 +65,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
   restoreEnvironmentVariable(
     "ALLOWED_FILE_ROOTS",
     originalAllowedFileRoots,
@@ -336,6 +338,42 @@ describe("with ALLOWED_FILE_ROOTS set, paths a helper computes", () => {
         paths: ["/media/show/link15/episode.ass"],
       })
     }).toThrow(/Too many symbolic links/u)
+  })
+
+  // `/media/show/escape` points at a name with an invalid UTF-8 byte,
+  // which is itself a link to /outside. Decoding the first target as a
+  // string would replace that byte and miss the second link.
+  test("refuses a link whose target is not valid UTF-8", () => {
+    // memfs stores link targets as strings, so the raw bytes Linux would
+    // return are supplied here.
+    vol.symlinkSync("/media/show/bad", "/media/show/escape")
+    const invalidTargetBytes = Buffer.from([
+      ...Buffer.from("/media/show/bad", "utf8"),
+      0xff,
+    ])
+    vi.spyOn(
+      fileSystemSync,
+      "readlinkSync",
+    ).mockImplementation(() => invalidTargetBytes)
+
+    expect(() => {
+      assertWritablePaths({
+        isLinkFollowed: true,
+        paths: ["/media/show/escape/new.txt"],
+      })
+    }).toThrow(/not valid UTF-8/u)
+  })
+
+  test("refuses a Buffer path that is not valid UTF-8", async () => {
+    await expect(
+      writeFile(
+        Buffer.from([
+          ...Buffer.from("/media/show/bad", "utf8"),
+          0xff,
+        ]),
+        "new",
+      ),
+    ).rejects.toBeInstanceOf(PathSafetyError)
   })
 
   test("accepts a `..` that stays inside the root", () => {

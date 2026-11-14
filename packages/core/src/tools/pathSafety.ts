@@ -253,6 +253,23 @@ const walkPhysicalPath = ({
   )
 }
 
+// A link target is raw bytes on Linux and need not be valid UTF-8.
+// Decoding it as a string would replace the bad bytes, and the walk would
+// follow a different path than the system does, so such a target is
+// refused instead.
+const readLinkTarget = (path: string): string => {
+  const targetBytes = readlinkSync(path, {
+    encoding: "buffer",
+  })
+  const target = targetBytes.toString("utf8")
+  if (!Buffer.from(target, "utf8").equals(targetBytes)) {
+    throw new PathSafetyError(
+      `Symbolic link target is not valid UTF-8: ${path}`,
+    )
+  }
+  return target
+}
+
 const followSymbolicLink = ({
   hopCount,
   path,
@@ -265,7 +282,7 @@ const followSymbolicLink = ({
       `Too many symbolic links: ${path}`,
     )
   }
-  const linkTarget = readlinkSync(path)
+  const linkTarget = readLinkTarget(path)
   return walkPhysicalPath({
     hopCount: hopCount + 1,
     isLastLinkFollowed: true,

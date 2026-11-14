@@ -6,7 +6,11 @@ import { fileURLToPath } from "node:url"
 import * as tools from "@mux-magic/tools"
 import { defer, type Observable } from "rxjs"
 
-import { assertWritePathInsideAllowedRoots } from "./pathSafety.js"
+import {
+  assertWritePathInsideAllowedRoots,
+  getAllowedFileRoots,
+  PathSafetyError,
+} from "./pathSafety.js"
 
 // Core's write primitives. Every app command, spawn operation, and
 // music writer in core moves, renames, deletes, and writes media through
@@ -28,13 +32,25 @@ import { assertWritePathInsideAllowedRoots } from "./pathSafety.js"
 // A path argument may be a string, a Buffer, or a file: URL. A
 // FileHandle (writeFile accepts one) names no path, so it is skipped:
 // opening it was the write that needed the check.
+// A Buffer path that is not valid UTF-8 is refused: decoding it would
+// check a different path than the one the system opens.
+const toBufferPathString = (path: Buffer): string => {
+  const decodedPath = path.toString("utf8")
+  if (!Buffer.from(decodedPath, "utf8").equals(path)) {
+    throw new PathSafetyError(
+      `Path is not valid UTF-8: ${decodedPath}`,
+    )
+  }
+  return decodedPath
+}
+
 const toPathString = (path: unknown): string | null =>
   typeof path === "string"
     ? path
     : path instanceof URL
       ? fileURLToPath(path)
       : Buffer.isBuffer(path)
-        ? path.toString()
+        ? toBufferPathString(path)
         : null
 
 // Throws a PathSafetyError when a path falls outside the allowed roots.
@@ -48,6 +64,11 @@ export const assertWritablePaths = ({
   isLinkFollowed: boolean
   paths: ReadonlyArray<unknown>
 }): void => {
+  // With no roots there is nothing to check, and a Buffer path is left
+  // alone rather than refused.
+  if (getAllowedFileRoots() === null) {
+    return
+  }
   paths
     .map(toPathString)
     .filter((path) => path !== null)
