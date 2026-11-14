@@ -412,6 +412,21 @@ export const assertWritePathInsideAllowedRoots = ({
       `Drive-relative paths are not allowed when file roots are set. Use a fully qualified path: ${path}`,
     )
   }
+  // A `..` in the path itself is refused, as the API refuses it. The
+  // system and a recursive mkdir both walk the raw segments, so a path
+  // such as `/outside/new/../../media/child` could create `/outside/new`
+  // before it lands inside a root. Core builds paths with `join`, which
+  // removes `..`, so only a hand-typed CLI path is affected. A `..`
+  // inside a link target is still resolved by the walk.
+  if (
+    path
+      .split(separatorPattern)
+      .some((segment) => segment === "..")
+  ) {
+    throw new PathSafetyError(
+      `Path traversal is not allowed when file roots are set: ${path}`,
+    )
+  }
   const resolvedPath = resolvePhysicalPath({
     isLastLinkFollowed: isLinkFollowed,
     path: isAbsolute(path)

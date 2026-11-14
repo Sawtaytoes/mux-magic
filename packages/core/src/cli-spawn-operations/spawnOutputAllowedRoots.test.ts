@@ -206,6 +206,38 @@ describe("spawn wrappers check the output path before they start the tool", () =
     expect(spawn).not.toHaveBeenCalled()
   })
 
+  // The existing-name checks join names onto the folder path, so a `..`
+  // there could check a different folder than the tool lists.
+  test("runMakeMkvConExtract and a split refuse a folder path with `..`", async () => {
+    vol.mkdirSync("/media/real/child", { recursive: true })
+    vol.symlinkSync("/media/real/child", "/media/alias")
+
+    await expect(
+      firstValueFrom(
+        runMakeMkvConExtract({
+          destinationPath: "/media/alias/../dest",
+          minimumTitleLengthSeconds: 0,
+          outputFilePath:
+            "/media/alias/../dest/title_t00.mkv",
+          sourcePath: "/media/disc",
+          titleIndex: 0,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+    await expectRefusedWithoutSpawn(
+      runMkvMerge({
+        args: [
+          "--split",
+          "chapters:3",
+          "/media/show/episode.mkv",
+        ],
+        outputFilePath:
+          "/media/alias/../SPLITS/episode.mkv",
+      }),
+    )
+    expect(spawn).not.toHaveBeenCalled()
+  })
+
   test("runMakeMkvConExtract refuses a destination outside the allowed roots", async () => {
     await expect(
       firstValueFrom(

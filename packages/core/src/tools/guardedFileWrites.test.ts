@@ -252,9 +252,9 @@ describe("with ALLOWED_FILE_ROOTS set, paths a helper computes", () => {
     ).rejects.toThrow()
   })
 
-  // The system takes `hop/..` as the parent of the link target, not as
-  // /media/show, so a lexical `..` collapse would check the wrong path.
-  test("refuses a `..` that climbs out of a folder link", async () => {
+  // A recursive mkdir walks the raw segments, so `..` could create a
+  // folder outside before the path lands inside a root.
+  test("refuses any `..` in the path when roots apply", async () => {
     vol.mkdirSync("/outside/child", { recursive: true })
     vol.symlinkSync("/outside/child", "/media/show/hop")
 
@@ -271,15 +271,49 @@ describe("with ALLOWED_FILE_ROOTS set, paths a helper computes", () => {
       ),
     ).rejects.toBeInstanceOf(PathSafetyError)
     await expect(
-      unlink("/media/show/hop/../secret.txt"),
+      mkdir("/outside/new/../../media/show/child", {
+        recursive: true,
+      }),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+    await expect(
+      unlink("/media/show/extras/../episode.mkv"),
     ).rejects.toBeInstanceOf(PathSafetyError)
 
     await expect(
       stat("/outside/escaped.txt"),
     ).rejects.toThrow()
+    await expect(stat("/outside/new")).rejects.toThrow()
     await expect(
-      readFile("/outside/secret.txt", "utf8"),
-    ).resolves.toBe("secret")
+      readFile("/media/show/episode.mkv", "utf8"),
+    ).resolves.toBe("episode")
+  })
+
+  // The system takes `hop/..` inside a link target as the parent of
+  // where `hop` leads, so a lexical collapse would check the wrong path.
+  test("refuses a link whose target climbs out through another link", async () => {
+    vol.mkdirSync("/outside/child", { recursive: true })
+    vol.symlinkSync("/outside/child", "/media/show/hop")
+    vol.symlinkSync("hop/../folder", "/media/show/sneaky")
+
+    await expect(
+      writeFile("/media/show/sneaky/escaped.txt", "new"),
+    ).rejects.toBeInstanceOf(PathSafetyError)
+
+    await expect(
+      stat("/outside/folder/escaped.txt"),
+    ).rejects.toThrow()
+  })
+
+  test("follows a link whose target uses `..` to stay inside the root", () => {
+    vol.mkdirSync("/media/extras", { recursive: true })
+    vol.symlinkSync("../extras", "/media/show/extras-link")
+
+    expect(() => {
+      assertWritablePaths({
+        isLinkFollowed: true,
+        paths: ["/media/show/extras-link/episode.ass"],
+      })
+    }).not.toThrow()
   })
 
   // On Linux a backslash is part of a file name, not a separator.
@@ -389,17 +423,6 @@ describe("with ALLOWED_FILE_ROOTS set, paths a helper computes", () => {
     ).rejects.toBeInstanceOf(PathSafetyError)
 
     await expect(stat("/missing-parent")).rejects.toThrow()
-  })
-
-  test("accepts a `..` that stays inside the root", () => {
-    vol.mkdirSync("/media/show/extras", { recursive: true })
-
-    expect(() => {
-      assertWritablePaths({
-        isLinkFollowed: true,
-        paths: ["/media/show/extras/../episode.ass"],
-      })
-    }).not.toThrow()
   })
 
   test("refuses a copy whose temporary file is a link that leads outside", async () => {
