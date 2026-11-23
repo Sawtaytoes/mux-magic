@@ -207,9 +207,10 @@ ENV PATH="/opt/makemkv/bin:${PATH}"
 # runtime spawn sets. Without it, the build itself would check
 # makemkv.com for updates.
 #
-# The exit code is ignored for the same reason as above. MakeMKV 1.18.4
-# with no key exits 253 ("This application version is too old"), and the
-# key is only mounted at runtime.
+# The exit code alone proves little (see above), so only the two statuses a
+# started binary gives here pass: 0, and 253 from MakeMKV 1.18.4 with no
+# key ("This application version is too old"), since the key is only
+# mounted at runtime. A crash (139) fails the build.
 #
 # MakeMKV v2.0.0 crashes on every decrypted Blu-ray backup (see the pin at
 # the top). A bump back to it fails the build here instead of failing every
@@ -218,7 +219,8 @@ RUN mkdir -p /tmp/makemkv-build-home/.MakeMKV \
   && printf 'app_AutoSubmitEnabled = "0"\napp_UpdateEnable = "0"\n' \
     > /tmp/makemkv-build-home/.MakeMKV/settings.conf \
   && { HOME=/tmp/makemkv-build-home makemkvcon -r --cache=1 info disc:9999 \
-    > /tmp/makemkv-build-check.log || true; } \
+    > /tmp/makemkv-build-check.log; makemkvconStatus=$?; true; } \
+  && case "$makemkvconStatus" in 0|253) ;; *) false ;; esac \
   && grep -q 'MSG:1005.*started' /tmp/makemkv-build-check.log \
   && ! grep -q 'MSG:5074' /tmp/makemkv-build-check.log \
   && test ! -e /tmp/makemkv-build-home/.MakeMKV/update.conf \

@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto"
 import {
+  chmodSync,
   chownSync,
   existsSync,
   mkdirSync,
@@ -85,9 +87,15 @@ export const setMakeMkvSettingsInText = ({
 
 // The file holds the registration key, so it is never truncated in place:
 // a failed write (a full disk, say) would leave it empty. The new text goes
-// to a temporary file beside it, which takes the original's mode and owner
-// and then replaces it in one rename. On any failure the temporary file is
-// removed and the original is untouched.
+// to a temporary file beside it, which is then renamed over the original.
+//
+// The temporary file gets a unique name and is created exclusively ("wx"),
+// so a stale file left by a crash can never be reused with its own
+// permissions. Its owner is copied from the original, and its mode is set
+// with chmod after the chown, because the `mode` passed to a create is
+// filtered by the process umask. A new file is created 0600, since it may
+// soon hold a key. On any failure the temporary file is removed and the
+// original is untouched.
 const replaceFileAtomically = ({
   filePath,
   text,
@@ -95,7 +103,7 @@ const replaceFileAtomically = ({
   filePath: string
   text: string
 }) => {
-  const temporaryFilePath = `${filePath}.mux-magic-${process.pid}.tmp`
+  const temporaryFilePath = `${filePath}.mux-magic-${randomUUID()}.tmp`
   const originalStats = existsSync(filePath)
     ? statSync(filePath)
     : null
@@ -103,10 +111,8 @@ const replaceFileAtomically = ({
   try {
     writeFileSync(temporaryFilePath, text, {
       encoding: "utf8",
-      mode:
-        originalStats === null
-          ? 0o660
-          : originalStats.mode & 0o7777,
+      flag: "wx",
+      mode: 0o600,
     })
 
     if (originalStats !== null) {
@@ -117,6 +123,12 @@ const replaceFileAtomically = ({
       )
     }
 
+    chmodSync(
+      temporaryFilePath,
+      originalStats === null
+        ? 0o600
+        : originalStats.mode & 0o7777,
+    )
     renameSync(temporaryFilePath, filePath)
   } catch (error) {
     rmSync(temporaryFilePath, { force: true })
