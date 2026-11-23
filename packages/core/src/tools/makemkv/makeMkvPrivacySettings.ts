@@ -1,7 +1,11 @@
 import {
+  chownSync,
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs"
 import { join } from "node:path"
@@ -79,10 +83,50 @@ export const setMakeMkvSettingsInText = ({
       : settingsText.replace(/\n$/, "").split("\n"),
   )
 
+// The file holds the registration key, so it is never truncated in place:
+// a failed write (a full disk, say) would leave it empty. The new text goes
+// to a temporary file beside it, which takes the original's mode and owner
+// and then replaces it in one rename. On any failure the temporary file is
+// removed and the original is untouched.
+const replaceFileAtomically = ({
+  filePath,
+  text,
+}: {
+  filePath: string
+  text: string
+}) => {
+  const temporaryFilePath = `${filePath}.mux-magic-${process.pid}.tmp`
+  const originalStats = existsSync(filePath)
+    ? statSync(filePath)
+    : null
+
+  try {
+    writeFileSync(temporaryFilePath, text, {
+      encoding: "utf8",
+      mode:
+        originalStats === null
+          ? 0o660
+          : originalStats.mode & 0o7777,
+    })
+
+    if (originalStats !== null) {
+      chownSync(
+        temporaryFilePath,
+        originalStats.uid,
+        originalStats.gid,
+      )
+    }
+
+    renameSync(temporaryFilePath, filePath)
+  } catch (error) {
+    rmSync(temporaryFilePath, { force: true })
+    throw error
+  }
+}
+
 // Runs before every makemkvcon spawn, so a settings file that was replaced
 // by hand (a new key, say) is corrected before MakeMKV reads it. The file
-// is written only when a setting changes, and in place, so its owner and
-// mode stay as they were.
+// is written only when a setting changes.
 export const applyMakeMkvPrivacySettings = (
   makeMkvHomePath: string,
 ) => {
@@ -104,6 +148,9 @@ export const applyMakeMkvPrivacySettings = (
 
   if (updatedText !== originalText) {
     mkdirSync(settingsFolderPath, { recursive: true })
-    writeFileSync(settingsFilePath, updatedText, "utf8")
+    replaceFileAtomically({
+      filePath: settingsFilePath,
+      text: updatedText,
+    })
   }
 }

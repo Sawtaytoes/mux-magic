@@ -12,7 +12,8 @@
 - The MakeMKV stage is pinned to `ghcr.io/jlesage/makemkv:v26.09.1`, the last tag with MakeMKV v1.18.4. The Dockerfile carries `# makemkv-tag-watcher: hold`, so the tag watcher reports a newer tag and does not bump. A build step fails when the image's makemkvcon reports MakeMKV v2.0.0.
 - A makemkvcon run that ends with a signal (a crash) or a non-zero code fails its observable with an error that names the signal or code, the last MSG line, and stderr. `runMakeMkvCon` rethrows that error, so the analysis job fails instead of completing with no titles.
 - Both spawn wrappers wait for `close`, so they read all of stdout. They stop waiting 10 seconds after `exit`, so a helper process that keeps the pipe open cannot hold the job.
-- Before every spawn, `applyMakeMkvPrivacySettings` sets `app_UpdateEnable = "0"` (the update check) and `app_AutoSubmitEnabled = "0"` (the preference "Submit dumps automatically") in `$MUX_MAGIC_MAKEMKV_HOME/.MakeMKV/settings.conf`. It keeps every other line, including the key, and writes only when a value changes.
+- Before every spawn, `applyMakeMkvPrivacySettings` sets `app_UpdateEnable = "0"` (the update check) and `app_AutoSubmitEnabled = "0"` (the preference "Submit dumps automatically") in `$MUX_MAGIC_MAKEMKV_HOME/.MakeMKV/settings.conf`. It keeps every other line, including the key, and writes only when a value changes. It never truncates the file in place: it writes a temporary file with the original mode and owner and renames it over the original, so a failed write cannot erase the key.
+- The Dockerfile's build-time makemkvcon checks run with a throwaway `HOME` that has the same two settings off, and the build fails if makemkvcon still prints MSG:5074 or writes `update.conf`.
 
 ## Context
 
