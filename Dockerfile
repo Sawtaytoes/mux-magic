@@ -15,7 +15,19 @@
 # Lifted verbatim from rip-deck, which has run this exact transplant onto
 # this exact base (node:26-trixie-slim) since 2026-07-25. Bumping this tag
 # is automated by .github/workflows/makemkv-tag-watcher.yml.
-FROM ghcr.io/jlesage/makemkv:v26.09.2 AS makemkv
+#
+# ⚠️ PINNED to v26.09.1, the last tag with MakeMKV v1.18.4. v26.09.2 ships
+# MakeMKV v2.0.0, whose makemkvcon segfaults (exit 139) on every Blu-ray
+# folder or image that has no AACS folder — which is every decrypted
+# `[BACKUP]` folder, so every `analyseDiscBackup` and `extractDiscTitles`
+# run. Reproduced 2026-11-23 in jlesage's own image, so it is upstream, not
+# this transplant; jlesage declined to roll the image back (docker-makemkv
+# #290). The tag watcher holds while the marker below is present.
+# makemkv-tag-watcher: hold
+# To unpin: run the newer tag's makemkvcon `info file:<a [BACKUP] folder>`
+# and see it list titles, then remove the marker and the v2.0.0 assertion
+# below. See docs/decisions/2026-11-23-makemkv-is-pinned-to-1-18-4-and-never-phones-home.md.
+FROM ghcr.io/jlesage/makemkv:v26.09.1 AS makemkv
 
 # ---------- Builder stage ----------
 # Installs ALL deps (devDeps included) and runs `pnpm build:prod` to produce
@@ -189,8 +201,31 @@ ENV PATH="/opt/makemkv/bin:${PATH}"
 # nothing, while the startup banner can only come from a binary that
 # actually started. Costs one empty layer and turns a future base bump
 # from a runtime surprise into a build failure.
-RUN makemkvcon -r --cache=1 info disc:9999 \
-  | grep -q 'MSG:1005.*started'
+#
+# These build-time runs use a throwaway HOME whose settings.conf turns off
+# the update check and dump submission, the same two settings every
+# runtime spawn sets. Without it, the build itself would check
+# makemkv.com for updates.
+#
+# The exit code alone proves little (see above), so only the two statuses a
+# started binary gives here pass: 0, and 253 from MakeMKV 1.18.4 with no
+# key ("This application version is too old"), since the key is only
+# mounted at runtime. A crash (139) fails the build.
+#
+# MakeMKV v2.0.0 crashes on every decrypted Blu-ray backup (see the pin at
+# the top). A bump back to it fails the build here instead of failing every
+# disc analysis after the deploy.
+RUN mkdir -p /tmp/makemkv-build-home/.MakeMKV \
+  && printf 'app_AutoSubmitEnabled = "0"\napp_UpdateEnable = "0"\n' \
+    > /tmp/makemkv-build-home/.MakeMKV/settings.conf \
+  && { HOME=/tmp/makemkv-build-home makemkvcon -r --cache=1 info disc:9999 \
+    > /tmp/makemkv-build-check.log; makemkvconStatus=$?; true; } \
+  && case "$makemkvconStatus" in 0|253) ;; *) false ;; esac \
+  && grep -q 'MSG:1005.*started' /tmp/makemkv-build-check.log \
+  && ! grep -q 'MSG:5074' /tmp/makemkv-build-check.log \
+  && test ! -e /tmp/makemkv-build-home/.MakeMKV/update.conf \
+  && ! grep -q 'MSG:1005.*MakeMKV v2\.0\.0 ' /tmp/makemkv-build-check.log \
+  && rm -r -- /tmp/makemkv-build-home /tmp/makemkv-build-check.log
 
 # /opt/makemkv is MOSTLY self-contained. The comment above is true of
 # `makemkv`, `makemkvcon` and `sdftool`, which resolve through the bundled
@@ -276,6 +311,11 @@ RUN fpcalc -version | grep -q 'fpcalc version'
 # and never committed; a missing or expired key fails loudly at the first
 # analysis (MSG:5021 / 5052 / 5055) rather than silently returning no
 # titles.
+#
+# Before each spawn, runMakeMkvCon.ts and runMakeMkvConExtract.ts set
+# `app_UpdateEnable` and `app_AutoSubmitEnabled` to "0" in that
+# settings.conf, so MakeMKV neither checks for updates nor submits dumps
+# automatically (makeMkvPrivacySettings.ts).
 ENV MUX_MAGIC_MAKEMKV_HOME=/makemkv-config
 RUN mkdir -p /makemkv-config/.MakeMKV && chmod 777 /makemkv-config
 

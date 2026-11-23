@@ -18,8 +18,11 @@ import {
   makeMkvHomePath,
 } from "../tools/appPaths.js"
 import { assertWritablePaths } from "../tools/guardedFileWrites.js"
+import { buildExitFailureError } from "../tools/makemkv/buildExitFailureError.js"
 import { buildKeyFailureError } from "../tools/makemkv/buildKeyFailureError.js"
+import { applyMakeMkvPrivacySettings } from "../tools/makemkv/makeMkvPrivacySettings.js"
 import { createProgressEmitter } from "../tools/progressEmitter.js"
+import { onChildProcessSettled } from "./onChildProcessSettled.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
 /**
@@ -76,6 +79,11 @@ export const runMakeMkvConExtract = ({
         getExistingMkvPaths(destinationPath),
       ),
     })
+
+    if (makeMkvHomePath !== null) {
+      applyMakeMkvPrivacySettings(makeMkvHomePath)
+    }
+
     const jobId = getActiveJobId()
     const emitter =
       jobId === undefined
@@ -150,49 +158,53 @@ export const runMakeMkvConExtract = ({
       observer.error(error)
     })
 
-    childProcess.on("exit", (code) => {
-      readlineInterface.close()
-      tracker?.finish()
+    onChildProcessSettled({
+      childProcess,
+      onSettled: ({ code, signal }) => {
+        readlineInterface.close()
+        tracker?.finish()
 
-      const keyFailureMessages = events.filter(
-        getIsMakemkvKeyFailureEvent,
-      )
-      const savedTitleCount =
-        getMakemkvSavedTitleCount(events)
-
-      // Checked BEFORE the exit code, because makemkvcon exits 0 on a key
-      // failure just as it does on success.
-      if (keyFailureMessages.length > 0) {
-        observer.error(
-          buildKeyFailureError(keyFailureMessages),
+        const keyFailureMessages = events.filter(
+          getIsMakemkvKeyFailureEvent,
         )
-      } else if (code !== 0 && code !== null) {
-        // code === null is the unsubscribe/tree-kill path.
-        observer.error(
-          new Error(
-            `makemkvcon exited with code ${code}`.concat(
-              stderrChunks.length > 0
-                ? `: ${stderrChunks.join("").trim()}`
-                : "",
+        const savedTitleCount =
+          getMakemkvSavedTitleCount(events)
+
+        // Checked BEFORE the exit code, because makemkvcon exits 0 on a key
+        // failure just as it does on success.
+        if (keyFailureMessages.length > 0) {
+          observer.error(
+            buildKeyFailureError(keyFailureMessages),
+          )
+        } else if (code !== 0) {
+          // A crash arrives as code null with a signal (SIGSEGV) and must
+          // fail the title. After an unsubscribe the tree kill also lands
+          // here, but the observer is already closed and ignores the error.
+          observer.error(
+            buildExitFailureError({
+              code,
+              events,
+              signal,
+              stderrText: stderrChunks.join("").trim(),
+            }),
+          )
+        } else if (code === 0 && savedTitleCount === null) {
+          observer.error(
+            new Error(
+              `makemkvcon exited 0 without reporting a saved-title count for title ${titleIndex} of ${sourcePath}. Treating that as a failure rather than trusting the exit code.`,
             ),
-          ),
-        )
-      } else if (code === 0 && savedTitleCount === null) {
-        observer.error(
-          new Error(
-            `makemkvcon exited 0 without reporting a saved-title count for title ${titleIndex} of ${sourcePath}. Treating that as a failure rather than trusting the exit code.`,
-          ),
-        )
-      } else if (code === 0 && savedTitleCount === 0) {
-        observer.error(
-          new Error(
-            `makemkvcon saved 0 titles for title ${titleIndex} of ${sourcePath} and still exited 0. Nothing was written.`,
-          ),
-        )
-      } else if (code === 0) {
-        observer.next(outputFilePath)
-        observer.complete()
-      }
+          )
+        } else if (code === 0 && savedTitleCount === 0) {
+          observer.error(
+            new Error(
+              `makemkvcon saved 0 titles for title ${titleIndex} of ${sourcePath} and still exited 0. Nothing was written.`,
+            ),
+          )
+        } else if (code === 0) {
+          observer.next(outputFilePath)
+          observer.complete()
+        }
+      },
     })
 
     const treeKillTeardown =

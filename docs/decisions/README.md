@@ -19,6 +19,7 @@ If you are an agent: skim this index at the start of any non-trivial task. Befor
 
 | Date decided | Decision | Area | Status |
 | --- | --- | --- | --- |
+| 2026-11-23 | [MakeMKV is pinned to 1.18.4, a crash fails the job, and MakeMKV never phones home](2026-11-23-makemkv-is-pinned-to-1-18-4-and-never-phones-home.md) | infra | Accepted |
 | 2026-11-14 | [Core writes check every path against the allowed roots](2026-11-14-core-writes-check-every-path-against-the-allowed-roots.md) | core | Accepted |
 | 2026-11-13 | [The API uses the shared Charcuterie write guard](2026-11-13-the-api-uses-the-shared-charcuterie-write-guard.md) | server/api | Accepted |
 | 2026-11-13 | [Browser writes are same-origin, and file changes stay under the allowed roots](2026-11-13-browser-writes-are-same-origin-and-file-changes-stay-under-allowed-roots.md) | server/api | Superseded in part by [2026-11-13](2026-11-13-the-api-uses-the-shared-charcuterie-write-guard.md) and [2026-11-14](2026-11-14-core-writes-check-every-path-against-the-allowed-roots.md) |
