@@ -62,7 +62,8 @@ const WEB_API_SHAPE_RULES = [
 // against the allowed file roots, including paths a command builds while
 // it runs. This rule keeps a new command from writing past that check.
 // The app's own state files (job records, caches, the transcode temp
-// store) live outside the media roots, so they are listed in `ignores`.
+// store, MakeMKV's settings file) live outside the media roots, so they
+// are listed in `ignores`.
 // See docs/decisions/2026-11-14-core-writes-check-every-path-against-the-allowed-roots.md.
 const GUARDED_WRITE_MESSAGE =
   "Import this write from packages/core/src/tools/guardedFileWrites.ts, which checks the path against the allowed file roots."
@@ -167,6 +168,7 @@ export default defineConfig(
       "packages/core/src/api/jobPersistence.ts",
       "packages/core/src/music/fixtures/**",
       "packages/core/src/tools/animeOfflineDatabase.ts",
+      "packages/core/src/tools/makemkv/makeMkvPrivacySettings.ts",
       "packages/core/src/tools/transcodeTempStore.ts",
     ],
     rules: {

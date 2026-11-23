@@ -2,7 +2,7 @@ import { spawn } from "node:child_process"
 
 import {
   getIsMakemkvKeyFailureEvent,
-  logAndSwallowPipelineError,
+  logAndRethrowPipelineError,
   logInfo,
   parseMakemkvLine,
 } from "@mux-magic/tools"
@@ -12,12 +12,15 @@ import {
   makeMkvConPath,
   makeMkvHomePath,
 } from "../tools/appPaths.js"
+import { buildExitFailureError } from "../tools/makemkv/buildExitFailureError.js"
 import { buildKeyFailureError } from "../tools/makemkv/buildKeyFailureError.js"
+import { applyMakeMkvPrivacySettings } from "../tools/makemkv/makeMkvPrivacySettings.js"
 import {
   buildTitleGraphFromEvents,
   type DiscTitleGraph,
 } from "../tools/makemkv/parseTitleGraph.js"
 import { MAKEMKV_INFO_TIMEOUT_MS } from "../tools/outboundTimeouts.js"
+import { onChildProcessSettled } from "./onChildProcessSettled.js"
 import { treeKillOnUnsubscribe } from "./treeKillChild.js"
 
 /**
@@ -56,6 +59,10 @@ export const runMakeMkvCon = ({
       "MAKEMKVCON",
       [makeMkvConPath].concat(commandArgs).join(" "),
     )
+
+    if (makeMkvHomePath !== null) {
+      applyMakeMkvPrivacySettings(makeMkvHomePath)
+    }
 
     const childProcess = spawn(
       makeMkvConPath,
@@ -96,40 +103,46 @@ export const runMakeMkvCon = ({
       observer.error(error)
     })
 
-    childProcess.on("exit", (code) => {
-      clearTimeout(timeoutHandle)
+    onChildProcessSettled({
+      childProcess,
+      onSettled: ({ code, signal }) => {
+        clearTimeout(timeoutHandle)
 
-      const events = stdoutChunks
-        .join("")
-        .split("\n")
-        .filter((line) => line.trim() !== "")
-        .map(parseMakemkvLine)
+        const events = stdoutChunks
+          .join("")
+          .split("\n")
+          .filter((line) => line.trim() !== "")
+          .map(parseMakemkvLine)
 
-      const keyFailureMessages = events.filter(
-        getIsMakemkvKeyFailureEvent,
-      )
-
-      // Checked BEFORE the exit code, because makemkvcon exits 0 on a key
-      // failure just as it does on success.
-      if (keyFailureMessages.length > 0) {
-        observer.error(
-          buildKeyFailureError(keyFailureMessages),
+        const keyFailureMessages = events.filter(
+          getIsMakemkvKeyFailureEvent,
         )
-      } else if (code === 0) {
-        observer.next(buildTitleGraphFromEvents(events))
-        observer.complete()
-      } else if (code !== null) {
-        // code === null is the unsubscribe/tree-kill path.
-        observer.error(
-          new Error(
-            `makemkvcon exited with code ${code}`.concat(
-              stderrChunks.length > 0
-                ? `: ${stderrChunks.join("").trim()}`
-                : "",
-            ),
-          ),
-        )
-      }
+
+        // Checked BEFORE the exit code, because makemkvcon exits 0 on a key
+        // failure just as it does on success.
+        if (keyFailureMessages.length > 0) {
+          observer.error(
+            buildKeyFailureError(keyFailureMessages),
+          )
+        } else if (code === 0) {
+          observer.next(buildTitleGraphFromEvents(events))
+          observer.complete()
+        } else {
+          // A crash arrives as code null with a signal (SIGSEGV). It must
+          // fail the job; staying silent here is what left job
+          // bed6fdb4-43c3-40ce-86e4-9aefc8b6e314 "running" after MakeMKV
+          // 2.0.0 segfaulted. After an unsubscribe the tree kill also lands
+          // here, but the observer is already closed and ignores the error.
+          observer.error(
+            buildExitFailureError({
+              code,
+              events,
+              signal,
+              stderrText: stderrChunks.join("").trim(),
+            }),
+          )
+        }
+      },
     })
 
     const treeKillTeardown =
@@ -138,4 +151,6 @@ export const runMakeMkvCon = ({
       clearTimeout(timeoutHandle)
       treeKillTeardown()
     }
-  }).pipe(logAndSwallowPipelineError(runMakeMkvCon))
+    // Rethrow, not swallow: a swallowed failure completes the analysis job
+    // with no titles and no error, which reads as an empty disc.
+  }).pipe(logAndRethrowPipelineError(runMakeMkvCon))

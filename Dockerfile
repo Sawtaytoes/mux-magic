@@ -15,7 +15,19 @@
 # Lifted verbatim from rip-deck, which has run this exact transplant onto
 # this exact base (node:26-trixie-slim) since 2026-07-25. Bumping this tag
 # is automated by .github/workflows/makemkv-tag-watcher.yml.
-FROM ghcr.io/jlesage/makemkv:v26.09.2 AS makemkv
+#
+# ⚠️ PINNED to v26.09.1, the last tag with MakeMKV v1.18.4. v26.09.2 ships
+# MakeMKV v2.0.0, whose makemkvcon segfaults (exit 139) on every Blu-ray
+# folder or image that has no AACS folder — which is every decrypted
+# `[BACKUP]` folder, so every `analyseDiscBackup` and `extractDiscTitles`
+# run. Reproduced 2026-11-23 in jlesage's own image, so it is upstream, not
+# this transplant; jlesage declined to roll the image back (docker-makemkv
+# #290). The tag watcher holds while the marker below is present.
+# makemkv-tag-watcher: hold
+# To unpin: run the newer tag's makemkvcon `info file:<a [BACKUP] folder>`
+# and see it list titles, then remove the marker and the v2.0.0 assertion
+# below. See docs/decisions/2026-11-23-makemkv-is-pinned-to-1-18-4-and-never-phones-home.md.
+FROM ghcr.io/jlesage/makemkv:v26.09.1 AS makemkv
 
 # ---------- Builder stage ----------
 # Installs ALL deps (devDeps included) and runs `pnpm build:prod` to produce
@@ -192,6 +204,12 @@ ENV PATH="/opt/makemkv/bin:${PATH}"
 RUN makemkvcon -r --cache=1 info disc:9999 \
   | grep -q 'MSG:1005.*started'
 
+# MakeMKV v2.0.0 crashes on every decrypted Blu-ray backup (see the pin at
+# the top). A bump back to it fails the build here instead of failing every
+# disc analysis after the deploy.
+RUN ! makemkvcon -r --cache=1 info disc:9999 \
+  | grep -q 'MSG:1005.*MakeMKV v2\.0\.0 '
+
 # /opt/makemkv is MOSTLY self-contained. The comment above is true of
 # `makemkv`, `makemkvcon` and `sdftool`, which resolve through the bundled
 # glibc under /opt/makemkv/lib. It is NOT true of the two HELPER binaries
@@ -276,6 +294,11 @@ RUN fpcalc -version | grep -q 'fpcalc version'
 # and never committed; a missing or expired key fails loudly at the first
 # analysis (MSG:5021 / 5052 / 5055) rather than silently returning no
 # titles.
+#
+# Before each spawn, runMakeMkvCon.ts and runMakeMkvConExtract.ts set
+# `app_UpdateEnable` and `app_AutoSubmitEnabled` to "0" in that
+# settings.conf, so MakeMKV neither checks for updates nor submits dumps
+# automatically (makeMkvPrivacySettings.ts).
 ENV MUX_MAGIC_MAKEMKV_HOME=/makemkv-config
 RUN mkdir -p /makemkv-config/.MakeMKV && chmod 777 /makemkv-config
 

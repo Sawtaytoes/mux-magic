@@ -94,6 +94,14 @@ jobs:
             | tail -1
           )"
 
+          # A pin held on purpose (MakeMKV v2.0.0 crashes on decrypted
+          # Blu-ray backups) is reported, never bumped. The Dockerfile says
+          # how to lift the hold.
+          if grep -q '^# makemkv-tag-watcher: hold$' Dockerfile; then
+            echo "::notice::The MakeMKV pin ${current} is held. Latest is ${latest}. See the Dockerfile before bumping."
+            latest="${current}"
+          fi
+
           echo "current=${current}" >> "$GITHUB_OUTPUT"
           echo "latest=${latest}" >> "$GITHUB_OUTPUT"
           echo "Current: ${current}  Latest: ${latest}"

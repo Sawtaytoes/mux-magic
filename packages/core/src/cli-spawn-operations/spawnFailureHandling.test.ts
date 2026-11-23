@@ -392,12 +392,17 @@ describe("probe timeouts", () => {
         toArray(),
       ),
     )
+    const rejection = expect(resultPromise).rejects.toThrow(
+      `makemkvcon info timed out after ${MAKEMKV_INFO_TIMEOUT_MS / 60000} minutes: /discs/stalled`,
+    )
 
     await vi.advanceTimersByTimeAsync(
       MAKEMKV_INFO_TIMEOUT_MS,
     )
 
-    await expect(resultPromise).resolves.toEqual([])
+    // The failure reaches the job, so the analysis fails instead of
+    // completing with no titles.
+    await rejection
     expect(getLoggedText(consoleErrorSpy)).toContain(
       `makemkvcon info timed out after ${MAKEMKV_INFO_TIMEOUT_MS / 60000} minutes: /discs/stalled`,
     )

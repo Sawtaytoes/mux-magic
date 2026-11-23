@@ -50,6 +50,12 @@ section), so a re-run reports fewer titles.
   (`app_DataDir` / `app_DestinationDir` repointed at mux-magic's paths).
   **The key is not in the image and not in any repo. Never commit it,
   never add code that fetches one.**
+- ⚠️ **MakeMKV is pinned to v1.18.4 (`jlesage/makemkv:v26.09.1`).** MakeMKV
+  v2.0.0 segfaults on every decrypted `[BACKUP]` folder (no `AACS` folder),
+  so do not bump past it until a newer makemkvcon reads one. Each spawn also
+  sets `app_UpdateEnable` and `app_AutoSubmitEnabled` to `"0"` in that
+  `settings.conf`, and a crash fails the job instead of leaving it running.
+  See [the ADR](decisions/2026-11-23-makemkv-is-pinned-to-1-18-4-and-never-phones-home.md).
 - `HOME` is set **per spawn** in `runMakeMkvCon.ts`, never image-wide —
   mux-magic also runs ffmpeg, mkvtoolnix, Playwright and a Python venv.
   See [the ADR](decisions/2026-08-12-makemkvcon-is-embedded-in-the-image.md).
